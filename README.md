@@ -35,7 +35,7 @@
 
 *Then the council convenes: one question fanned out to every seat, the answers side by side, the disagreement in plain view — the spread is the signal.*
 
-Inspired by [karpathy/llm-council](https://github.com/karpathy/llm-council) — the orchestration concept and his prompt designs (Judge synthesis, peer evaluation) were the starting point. The difference is the shape, not the polish: the original (and most of its 80+ forks) runs one fixed answer → review → synthesize pass behind a local server you have to run, while Yes-Brainer is a zero-backend browser PWA with three deliberation structures — including a real multi-round debate refereed to convergence — multi-turn follow-ups with on-device persistence, anonymized rubric voting with the agreement spread made visible, and a phone-first UI ([how it compares to everything else](#how-it-compares)).
+💡 Inspired by [karpathy/llm-council](https://github.com/karpathy/llm-council) — the orchestration concept and his prompt designs (Judge synthesis, peer evaluation) were the starting point. The difference is the shape, not the polish: the original (and most of its 80+ forks) runs one fixed answer → review → synthesize pass behind a local server you have to run, while Yes-Brainer is a zero-backend browser PWA with three deliberation structures — **including a real multi-round debate refereed to convergence (consensus mode)** — multi-turn follow-ups with on-device persistence, anonymized rubric voting with the agreement spread made visible, and a phone-first UI ([how it compares to everything else](#how-it-compares)).
 
 ## Your part as a user 
 
@@ -55,12 +55,12 @@ For complex or important questions, one model's confident answer isn't enough �
 
 ### LLM roles
 
-| Role | What it does | LLM? |
-|---|---|---|
-| **Participant** | Seated at the table; answers the question. In **Trial**, also votes on others' answers (anonymized). In **Consensus**, re-answers each round — reconsidering its own position in light of peers' anonymized arguments. The roster is a list of Participants. | yes |
-| **Host** | Browser-side orchestration code: collects responses, anonymizes for voting, routes to the next role, persists events on-device. Mechanical, not reasoning — not represented in the UI. | no — code |
-| **Judge** *(optional)* | Reads anonymized answers + votes, emits a single synthesized decision. | yes |
-| **Mediator** *(optional)* | Referees a multi-round Participant debate: each round judges whether the Participants have converged; if not, distills their disagreements (anonymized) to seed the next round. Emits the final consensus summary on agreement, or points of agreement + remaining conflicts at the round cap. | yes |
+| Role | What it does |
+|---|---|
+| **Participant** | Seated at the table; answers the question. In **Trial**, also votes on others' answers (anonymized). In **Consensus**, re-answers each round — reconsidering its own position in light of peers' anonymized arguments. The roster is a list of Participants. |
+| **Host** | Browser-side orchestration code: collects responses, anonymizes for voting, routes to the next role, persists events on-device. Mechanical, not reasoning — not represented in the UI. |
+| **Judge** *(optional)* | Reads anonymized answers + votes, emits a single synthesized decision. |
+| **Mediator** *(optional)* | Referees a multi-round Participant debate: each round judges whether the Participants have converged; if not, distills their disagreements (anonymized) to seed the next round. Emits the final consensus summary on agreement, or points of agreement + remaining conflicts at the round cap. |
 
 Each role is a prompt template + an I/O contract.
 
