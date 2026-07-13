@@ -1,0 +1,53 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          # Single source of truth for the Node version (see .nvmrc).
+          node-version-file: '.nvmrc'
+          cache: npm
+
+      - run: npm ci
+      # `npm run build` runs `tsc -b` (typecheck) + `vite build` +
+      # the SPA 404-fallback copy, so a type error fails the deploy.
+      #
+      # The analytics pair is repo *variables*, not secrets — both values are
+      # public in the served bundle anyway. Forks without them build with
+      # analytics disabled (src/analytics/index.ts) and no analytics origin
+      # in their CSP (vite.config.ts).
+      - run: npm run build
+        env:
+          VITE_ANALYTICS_ENDPOINT: ${{ vars.VITE_ANALYTICS_ENDPOINT }}
+          VITE_ANALYTICS_WEBSITE_ID: ${{ vars.VITE_ANALYTICS_WEBSITE_ID }}
+
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

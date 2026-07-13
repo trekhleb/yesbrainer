@@ -1,0 +1,319 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  /* The app is a fixed shell (header / scrollable content / footer) — the
+   * *page* itself must never scroll, or the header/footer would slide off and
+   * the mobile browser chrome would show/hide on scroll. All scrolling lives
+   * in nested `overflow: auto` regions (the content area, code blocks, wide
+   * tables), so locking page scroll here is safe and keeps the chrome stable.
+   */
+  overflow: hidden;
+  /* iOS Safari rubber-bands the *document* on touch even with overflow:hidden.
+   * That bounce translates the page behind any `position: fixed` overlay
+   * (modal/drawer backdrop), exposing the app content at the edges and making
+   * the dimmed layer look detached. `overscroll-behavior: none` disables the
+   * page bounce (Safari 16+); the app never page-scrolls anyway, so there's
+   * nothing legitimate to bounce. Overlay scroll regions add `contain` so
+   * reaching their end doesn't chain back out to the document. */
+  overscroll-behavior: none;
+}
+
+/* App shell height. `dvh` tracks the *visible* viewport as mobile-browser
+ * chrome (URL bar / bottom toolbar) shows and hides on scroll, so the fixed
+ * header + footer stay pinned to the real screen edges instead of being
+ * pushed off under the browser bars. `100vh` is the fallback for older
+ * engines (and equals the full window in an installed PWA — no chrome). This
+ * lives here, not in the styletron object, because styletron can't emit the
+ * two-declaration fallback. */
+.app-shell {
+  height: 100vh;
+  height: 100dvh;
+}
+
+body {
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue',
+    Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  /* Crisp cool near-white — the "bright/clean/modern" base. The earlier warm
+   * cream read premium-editorial but fought brightness; this airier page lets
+   * the vivid "studio" accents (solid icon-chips) pop. High-contrast ink. */
+  color: #15171c;
+  background: #f6f7f9;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* iOS Safari (browser tab) ignores `overscroll-behavior` for the *document*
+   * rubber-band — a touch-drag still bounces the whole page, which slides
+   * `position: fixed` overlays (modal / drawer backdrop) and exposes the bright
+   * app behind them. Taking <body> out of flow — pinned to all four edges —
+   * leaves the document with nothing to scroll, so it physically can't bounce.
+   * The app is a fixed shell that never page-scrolls (all scroll lives in
+   * nested overflow:auto regions), so this is free. This is what
+   * `overscroll-behavior` alone can't do on iOS Safari tabs. */
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+/* Dark mode. Driven by `<html data-theme="dark">`, which
+ * `<ThemeProvider>` sets in sync with the active Base Web theme. We
+ * intentionally only re-tint the surfaces that *don't* go through
+ * Base Web's `theme.colors.*` API (body, markdown code/links/borders).
+ * All Base Web components already swap palettes via the theme switch
+ * itself, so duplicating those rules here would just risk drift. */
+html[data-theme='dark'] body {
+  /* Cool near-black to match the crisp light side. */
+  color: #e9eaee;
+  background: #0e0f12;
+}
+html[data-theme='dark'] .md-content code {
+  background: rgba(255, 255, 255, 0.10);
+}
+html[data-theme='dark'] .md-content blockquote {
+  border-left-color: #444;
+  color: #b8b8b8;
+}
+html[data-theme='dark'] .md-content a {
+  color: #a2a0ff;
+}
+html[data-theme='dark'] .md-content th,
+html[data-theme='dark'] .md-content td {
+  border-color: #333;
+}
+html[data-theme='dark'] .md-content hr {
+  border-top-color: #2a2a2a;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+code,
+pre {
+  font-family:
+    ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+
+/* Markdown-rendered assistant output — blog-prose rhythm,
+   re-tuned denser when the Compare grid landed.
+   The original "compact chat message" spacing (p 0.5em, li 0.2em, flat
+   1.05–1.25em headings) read like a dense wiki page and was rejected;
+   the first fix over-corrected to 16px/1.65 — tuned for one ~75ch
+   carousel card, but in a ~370–440px grid column that type yields 6–8
+   words per line (choppy) and towers vertically. 15px/1.6 is the
+   narrow-column ("newspaper") texture: ~45–50ch per grid column and on
+   phone cards, and it matches the app's 15px body/chrome + user bubble
+   (answers at 16px were the odd one out). What must NOT regress toward
+   the wiki look: the visible heading scale with asymmetric margins (air
+   *above* a heading is what chapters a long answer — little below),
+   near-line paragraph gaps (≥0.65em), and 600-weight bold so the
+   models' "**Label:** …" bullet habit stops reading like a spec sheet.
+   Card widths are untouched — this rhythm is the readability lever. */
+.md-content {
+  white-space: normal;
+  font-size: 15px;
+  line-height: 1.6;
+}
+.md-content > :first-child {
+  margin-top: 0;
+}
+.md-content > :last-child {
+  margin-bottom: 0;
+}
+.md-content p {
+  margin: 0.7em 0;
+}
+.md-content strong {
+  font-weight: 600;
+}
+.md-content h1,
+.md-content h2,
+.md-content h3,
+.md-content h4,
+.md-content h5,
+.md-content h6 {
+  line-height: 1.3;
+  margin: 1.25em 0 0.45em;
+}
+.md-content h1 {
+  font-size: 1.35em;
+  letter-spacing: -0.01em;
+}
+.md-content h2 {
+  font-size: 1.2em;
+  letter-spacing: -0.01em;
+}
+.md-content h3 {
+  font-size: 1.08em;
+}
+.md-content h4,
+.md-content h5,
+.md-content h6 {
+  font-size: 1em;
+}
+.md-content ul,
+.md-content ol {
+  margin: 0.65em 0;
+  padding-left: 1.35em;
+}
+.md-content li {
+  margin: 0.3em 0;
+}
+.md-content code {
+  background: rgba(0, 0, 0, 0.06);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+.md-content pre {
+  padding: 10px 12px;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 0.5em 0;
+  /* Fenced blocks should never widen the chat bubble. Bounded
+   * by 100% so a single long line scrolls horizontally inside the
+   * block instead of stretching the parent. */
+  max-width: 100%;
+}
+.md-content pre code {
+  background: transparent;
+  padding: 0;
+}
+/* Shiki dual-theme switch. With `defaultColor: false`, Shiki emits
+ * `--shiki-light` / `--shiki-dark` on every token and `…-bg` on the
+ * <pre>. We pick which variable is "active" based on <html
+ * data-theme>, so toggling the theme is a pure CSS swap (no
+ * re-tokenisation, no React re-render). */
+.md-content pre.shiki,
+.md-content pre.shiki span {
+  color: var(--shiki-light);
+  background-color: var(--shiki-light-bg);
+}
+html[data-theme='dark'] .md-content pre.shiki,
+html[data-theme='dark'] .md-content pre.shiki span {
+  color: var(--shiki-dark);
+  background-color: var(--shiki-dark-bg);
+}
+/* Tokens inherit color from the <pre>; only the <pre> needs the
+ * background. Reset the span background that the rule above set so
+ * inline tokens don't paint their own rectangle. */
+.md-content pre.shiki span {
+  background-color: transparent;
+}
+.md-content blockquote {
+  margin: 0.5em 0;
+  padding-left: 12px;
+  border-left: 3px solid #ddd;
+  color: #555;
+}
+.md-content a {
+  color: #4f4dd0;
+}
+.md-content table {
+  border-collapse: collapse;
+  margin: 0.5em 0;
+  /* Let wide tables fit on phones. `display: block` lets the
+   * table establish its own scrolling container without breaking the
+   * surrounding flexbox layout. `max-width: 100%` + `overflow-x` keeps
+   * the chat bubble width while letting the table scroll inside it. */
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+}
+.md-content th,
+.md-content td {
+  border: 1px solid #ddd;
+  padding: 4px 8px;
+}
+.md-content hr {
+  border: none;
+  border-top: 1px solid #e5e5e5;
+  margin: 0.5em 0;
+}
+/* Cap inline images at the pane width — a model that returns a
+ * large image URL (e.g. via web_search) would otherwise
+ * blow out the chat layout. `height: auto` preserves the aspect
+ * ratio; subtle radius matches the user-bubble thumbnail look. */
+.md-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 6px 0;
+  display: block;
+}
+
+
+/* Accessibility: honour the user's reduced-motion preference everywhere
+ * we drive a CSS animation. Aligns with WCAG 2.1 SC 2.3.3 (Animation
+ * from Interactions).
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Print. The screen app is a deliberately *non-scrolling* fixed shell —
+ * <body> is position:fixed pinned to the viewport, html/body/#root are
+ * overflow:hidden, and `.app-shell` is locked to `100dvh`; all real scrolling
+ * lives in nested `overflow:auto` regions (see the top of this file). Printed
+ * as-is that clips everything past one screen, and the browser's default
+ * `print-color-adjust: economy` drops background colours/gradients — which
+ * turned the coloured icon-chips (a white glyph on a tinted gradient) into
+ * empty boxes and flattened the card tints.
+ *
+ * This block is scoped entirely to `@media print`, so it leaves the
+ * screen/mobile layout untouched. It (1) forces colours/backgrounds to render
+ * and (2) releases the fixed-shell + nested-scroll constraints so the whole
+ * document flows across as many pages as it needs. */
+@media print {
+  *,
+  *::before,
+  *::after {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Unpin the document so its height grows with content instead of being
+     clipped to the viewport. */
+  html,
+  body,
+  #root {
+    position: static;
+    overflow: visible;
+    height: auto;
+  }
+
+  /* Let the flex shell size to content rather than one screen height... */
+  .app-shell {
+    height: auto;
+  }
+
+  /* ...and un-clip every nested scroll region inside it so its full content
+     prints (rather than just the on-screen slice). Print-only, so the `auto`
+     scrollers are unaffected on screen. */
+  .app-shell * {
+    overflow: visible !important;
+    max-height: none !important;
+  }
+}

@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- Never leak the page URL to providers or clicked links; the app has
+         no inbound links that need referrer attribution. (The build also
+         injects a Content-Security-Policy meta here — see vite.config.ts.) -->
+    <meta name="referrer" content="no-referrer" />
+
+    <title>Yes-Brainer — a council of AI models for the decisions that aren’t no-brainers</title>
+    <meta
+      name="description"
+      content="One question, several AI models: parallel answers, debate to consensus, or a judged verdict. Free and browser-only — no accounts, no server; keys and history live only in your browser, prompts go only to the providers you choose."
+    />
+    <link rel="canonical" href="https://yesbrainer.ai/" />
+    <meta name="application-name" content="Yes-Brainer" />
+    <meta name="apple-mobile-web-app-title" content="Yes-Brainer" />
+
+    <!-- Browser chrome matches the app shell's `backgroundPrimary` (the
+         content column + mobile header): Base Web white / #161616. -->
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#161616" />
+
+    <!-- Icons — all derived from the brand logo (public/logo.svg). favicon.svg flips
+         its fill with the OS scheme; the .ico packs 16/32/48 for legacy
+         UAs and search-engine crawlers. -->
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <!-- Social embeds (Open Graph). The banner carries the tagline visually,
+         so og:title stays short — identity, not a repeat of the pitch. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Yes-Brainer" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:title" content="Yes-Brainer — a council of AI models" />
+    <meta
+      property="og:description"
+      content="One question, several AI models: parallel answers, debate to consensus, or a judged verdict. Free and browser-only — no accounts, no server; keys and history live only in your browser, prompts go only to the providers you choose."
+    />
+    <meta property="og:url" content="https://yesbrainer.ai/" />
+    <meta property="og:image" content="https://yesbrainer.ai/banner-v3-light.jpg" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1672" />
+    <meta property="og:image:height" content="878" />
+    <meta
+      property="og:image:alt"
+      content="Yes-Brainer — a council of AI models for the decisions that aren’t no-brainers. Modes: Parallel answers, Consensus debate, Trial verdict."
+    />
+
+    <!-- Twitter / X card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@trekhleb" />
+    <meta name="twitter:creator" content="@trekhleb" />
+    <meta name="twitter:title" content="Yes-Brainer — a council of AI models" />
+    <meta
+      name="twitter:description"
+      content="One question, several AI models: parallel answers, debate to consensus, or a judged verdict. Free and browser-only — no accounts, no server; keys and history live only in your browser, prompts go only to the providers you choose."
+    />
+    <meta name="twitter:image" content="https://yesbrainer.ai/banner-v3-light.jpg" />
+
+    <!-- Structured data for search engines. A JSON-LD block is a data
+         island, not executable script, so the CSP's script-src doesn't
+         apply to it. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Yes-Brainer",
+        "url": "https://yesbrainer.ai/",
+        "description": "A council of AI models for the decisions that aren’t no-brainers: several models answer in parallel, debate to consensus, or deliver a judged verdict. Browser-only and BYOK — no accounts, no server; keys and history live only in your browser, prompts go only to the providers you choose.",
+        "applicationCategory": "ProductivityApplication",
+        "operatingSystem": "Any — runs in the browser",
+        "browserRequirements": "Requires JavaScript",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "image": "https://yesbrainer.ai/banner-v3-light.jpg",
+        "author": {
+          "@type": "Person",
+          "name": "Oleksii Trekhleb",
+          "url": "https://trekhleb.dev"
+        }
+      }
+    </script>
+
+    <!-- Pre-mount splash styles. Inlined (not a linked stylesheet) so the
+         very first paint is already styled with no JS and nothing extra in
+         the critical path. `index.css` doesn't apply until the module graph
+         evaluates, so the splash sets its own viewport-filling background
+         (matched to the body's `#f6f7f9` / `#0e0f12`) and can't rely on it.
+         The mark reuses the same `logo.svg` mask as the in-app BrandMark
+         (single source of truth) and flips fill by OS scheme — the app's
+         own `data-theme` isn't set until React mounts, so
+         `prefers-color-scheme` is the only theme signal available this
+         early (a forced-theme user may see one brief flash at handoff).
+         CSP: `style-src` allows this inline style; an inline *script* to
+         remove the splash would be blocked by `script-src 'self'` — and
+         isn't needed, since React's createRoot clears #root's children on
+         mount, dropping the splash the instant the app paints. Honors
+         reduced-motion. -->
+    <style>
+      .boot-splash {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f6f7f9;
+      }
+      .boot-splash__mark {
+        width: 72px;
+        height: 72px;
+        background-color: #000;
+        -webkit-mask: url(/logo.svg) center / contain no-repeat;
+        mask: url(/logo.svg) center / contain no-repeat;
+        animation: boot-splash-pulse 1.6s ease-in-out infinite;
+      }
+      @keyframes boot-splash-pulse {
+        0%,
+        100% {
+          opacity: 0.3;
+          transform: scale(0.94);
+        }
+        50% {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+      @media (prefers-color-scheme: dark) {
+        .boot-splash {
+          background: #0e0f12;
+        }
+        .boot-splash__mark {
+          background-color: #fff;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .boot-splash__mark {
+          animation: none;
+          opacity: 0.9;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <!-- First-paint splash — pure HTML/CSS, painted before any module
+           loads and cleared automatically when React's createRoot mounts
+           into #root. Turns the pre-mount JS window (blank white today)
+           into a branded beat. See the inline <style> in <head> for the
+           rationale and CSP notes. -->
+      <div class="boot-splash" aria-hidden="true">
+        <div class="boot-splash__mark"></div>
+      </div>
+    </div>
+    <noscript>
+      Yes-Brainer is a browser-only app and needs JavaScript to run — there is
+      no server to fall back to.
+    </noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

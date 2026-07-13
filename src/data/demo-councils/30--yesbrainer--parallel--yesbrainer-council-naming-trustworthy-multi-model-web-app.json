@@ -1,0 +1,129 @@
+{
+  "version": 1,
+  "exportedAt": 1783722493457,
+  "councils": [
+    {
+      "id": "9e38648f-ea09-45a1-b321-1722bd212b5e",
+      "title": "Name This App: Nobody Said Yes-Brainer",
+      "createdAt": 1783722339975,
+      "socialStructure": "roundtable",
+      "seats": [
+        {
+          "id": "6da5a003-33c5-49ed-a5ef-485f0ebee9f8",
+          "modelId": "anthropic:claude-fable-5",
+          "config": {}
+        },
+        {
+          "id": "59bdc117-1ec8-488c-9742-aaab726187b5",
+          "modelId": "openai:gpt-5.5",
+          "config": {}
+        },
+        {
+          "id": "41fa18d5-745f-4df3-8acb-d0b537d38817",
+          "modelId": "google:gemini-3.1-pro-preview",
+          "config": {}
+        }
+      ],
+      "turns": [
+        {
+          "id": "70a25545-3af3-436a-b57b-c17397d9c90f",
+          "idx": 0,
+          "userMsg": "Name this product: a private web app, no accounts, where several AI models answer your hard question together — side-by-side, debating to consensus, or with a judge — because one model's confident answer isn't enough to trust. Give 5 name candidates with a one-line tagline each. Names should plausibly have a .com or .ai available.",
+          "events": [
+            {
+              "id": "01cf0e64-e742-44b8-8671-482e12450eb9",
+              "roleType": "participant",
+              "seatId": "6da5a003-33c5-49ed-a5ef-485f0ebee9f8",
+              "modelId": "anthropic:claude-fable-5",
+              "output": "Here are 5 name candidates:\n\n1. **Quorum** (quorumai.com / getquorum.ai) — *One question. Many minds. A verdict you can trust.*\n\n2. **Polymind** (polymind.ai) — *Ask once, hear every model argue it out.*\n\n3. **Concordia** (concordia.ai / useconcordia.com) — *AI answers, cross-examined to consensus.*\n\n4. **TriVerdict** (triverdict.com / triverdict.ai) — *Side-by-side, debated, and judged — before you believe it.*\n\n5. **Parlai** (parlai.ai — note: name collision risk with Meta's ParlAI research library; consider **Parley** / parleyhq.com instead) — *Where AI models parley over your hardest questions.*\n\n**My top pick: Quorum** — it instantly communicates \"multiple voices required before a decision counts,\" which is exactly the product's trust thesis, and it works for the debate, consensus, and judge modes alike.\n\nA quick note on availability: single dictionary words like quorum.com or parley.com are almost certainly taken, but the standard startup workarounds (getquorum.ai, quorum.app, useconcordia.com) are plausibly open. Coined names like Polymind and TriVerdict have the best odds of a clean .com or .ai. Worth a quick trademark search on any finalist before committing.",
+              "ts": 1783722377727,
+              "tokens": {
+                "input": 5432,
+                "output": 493
+              }
+            },
+            {
+              "id": "729bd67b-83dd-42b0-ad3e-a8dddb909d5c",
+              "roleType": "participant",
+              "seatId": "59bdc117-1ec8-488c-9742-aaab726187b5",
+              "modelId": "openai:gpt-5.5",
+              "output": "1. **QuorumIQ** — *When one AI isn’t enough, assemble a smarter answer.*\n\n2. **CouncilPrompt** — *Ask once; let multiple models reason it out together.*\n\n3. **ConcurraAI** — *Side-by-side AI perspectives, converging on what’s most trustworthy.*\n\n4. **ManyMindsAI** — *Hard questions deserve more than one confident opinion.*\n\n5. **VerdictMesh** — *Models debate, compare, and judge their way to a better answer.*\n\n*Note: I haven’t checked live domain availability, but these are intentionally coined/compound names that are more likely to have a usable `.com` or `.ai` than generic terms.*",
+              "ts": 1783722377727,
+              "tokens": {
+                "input": 5665,
+                "output": 318
+              }
+            },
+            {
+              "id": "d7249188-538a-41e6-b7fc-2534853067e6",
+              "roleType": "participant",
+              "seatId": "41fa18d5-745f-4df3-8acb-d0b537d38817",
+              "modelId": "google:gemini-3.1-pro-preview",
+              "output": "Here are five thoughtful name candidates, tailored for domain availability (.com or .ai) and capturing the essence of multi-model debate and consensus:\n\n1. **ModelJury (.ai or .com)**\n   *Tagline:* Put confident AI answers on trial and let a private panel of models debate their way to the verdict.\n\n2. **Dialectix (.ai)**\n   *Tagline:* Watch the world’s top models argue, judge, and synthesize the ultimate answer to your hardest questions.\n\n3. **OmniBench (.ai)**\n   *Tagline:* A private, zero-friction workbench where multiple AIs test, check, and refine each other’s work.\n\n4. **PluralMinds (.ai)**\n   *Tagline:* Because solving complex problems requires a consensus, not just a single confident guess.\n\n5. **SynthCouncil (.com)**\n   *Tagline:* Convene an anonymous, instant cabinet of AI experts to debate your toughest inquiries side-by-side.",
+              "ts": 1783722377727,
+              "tokens": {
+                "input": 91,
+                "output": 1523
+              }
+            }
+          ],
+          "tokenTotal": {
+            "inputTokens": 11188,
+            "outputTokens": 2334
+          }
+        },
+        {
+          "id": "7ff86cbb-9b6a-4a3c-9c16-1320802689be",
+          "idx": 1,
+          "userMsg": "what about the .ai domain ready but not including the AI suffix in the name itself?",
+          "events": [
+            {
+              "id": "c26490fa-7c20-4a67-839c-c613768e0dce",
+              "roleType": "participant",
+              "seatId": "6da5a003-33c5-49ed-a5ef-485f0ebee9f8",
+              "modelId": "anthropic:claude-fable-5",
+              "output": "Good constraint — the name should stand on its own, with .ai as the address rather than part of the identity. Here are 5:\n\n1. **Quorum** (quorum.ai) — *No single answer counts until the minds agree.*\n   Still my top pick; the word does all the work without needing \"AI\" anywhere.\n\n2. **Tribunal** (tribunal.ai) — *Your question, argued before a panel — verdict included.*\n   Leans into the judge mode; premium, serious, memorable.\n\n3. **Conclave** (conclave.ai) — *Hard questions go in. Consensus comes out.*\n   Evokes deliberation behind closed doors — fits the private, no-accounts angle.\n\n4. **Crossvet** (crossvet.com / crossvet.ai) — *Every answer cross-examined before you trust it.*\n   Coined, so both TLDs are very likely clean; verb-able (\"crossvet it\").\n\n5. **Manyfold** (manyfold.ai) — *One question, many minds, one answer you can stand on.*\n   Warmer and more consumer-friendly; the \"many\" carries the multi-model idea.\n\nA few practical notes:\n\n- **Availability odds:** Coined names (Crossvet, Manyfold) are near-certain to be open on both .com and .ai. Dictionary words (Quorum, Tribunal, Conclave) are likely registered on .com but have a real shot on .ai — and if the exact .ai is parked, it's often buyable for low four figures, which is normal for a product launch.\n- **Branding test:** Say it in a sentence — \"I ran it through Quorum\" / \"Conclave says the models disagree.\" All five pass without needing \"AI\" spoken aloud, which is the sign the name works.\n- **One caution:** Tribunal and Conclave skew formal/heavy; great if you want gravitas, less great if the tone is a friendly everyday tool. Quorum sits in the middle — institutional enough to signal trust, light enough for daily use.\n\nIf you want, I can generate a second batch skewed more playful or more enterprise.",
+              "ts": 1783722456712,
+              "tokens": {
+                "input": 5911,
+                "output": 943
+              }
+            },
+            {
+              "id": "2038d62d-2b86-499e-9b99-e7294ce6b437",
+              "roleType": "participant",
+              "seatId": "59bdc117-1ec8-488c-9742-aaab726187b5",
+              "modelId": "openai:gpt-5.5",
+              "output": "Absolutely — names that **sound complete as brands** but pair naturally with `.ai`:\n\n1. **Quorum** — *Multiple models, one more trustworthy answer.*  \n   Domain style: **quorum.ai**\n\n2. **Convene** — *Bring the best models together before you decide.*  \n   Domain style: **convene.ai**\n\n3. **Tribunal** — *AI answers weighed, challenged, and judged.*  \n   Domain style: **tribunal.ai**\n\n4. **Accord** — *Where competing AI answers converge on confidence.*  \n   Domain style: **accord.ai**\n\n5. **Panelist** — *Ask once; compare every model’s best thinking.*  \n   Domain style: **panelist.ai**\n\nA few more that may be easier to own than single dictionary words:\n\n- **Modelcourt** — *Put AI answers on trial before you trust them.*  \n- **Benchwise** — *A bench of models for your hardest questions.*  \n- **Concordia** — *Many AI perspectives, one reasoned conclusion.*  \n- **Crosscheck** — *Don’t trust one answer. Cross-check it.*  \n- **Jurybox** — *Let multiple models deliberate before the verdict.*",
+              "ts": 1783722456712,
+              "tokens": {
+                "input": 5837,
+                "output": 347
+              }
+            },
+            {
+              "id": "c50ccc6f-2762-4a95-86f1-9d3fc010763c",
+              "roleType": "participant",
+              "seatId": "41fa18d5-745f-4df3-8acb-d0b537d38817",
+              "modelId": "google:gemini-3.1-pro-preview",
+              "output": "Here are five candidates that stand strong as independent brand names, free of the \"AI\" cliché, while pairing perfectly with a `.ai` domain:\n\n1. **Conclave** (conclave.ai)\n   *Tagline:* Summon a private, instant room where the world’s best models debate your hardest questions behind closed doors.\n\n2. **Crucible** (crucible.ai)\n   *Tagline:* Burn away hallucinations by forcing competing models to cross-check, argue, and forge a consensus you can trust. \n\n3. **Tribunal** (tribunal.ai)\n   *Tagline:* Put confident claims on trial with a side-by-side panel of models debating their way to the final verdict.\n\n4. **Parley** (parley.ai)\n   *Tagline:* Instantly convene a zero-friction negotiation where competing models challenge each other to find the truth.\n\n5. **Concord** (concord.ai)\n   *Tagline:* Because complex problems require a harmony of overlapping perspectives, not just a single confident guess.",
+              "ts": 1783722456712,
+              "tokens": {
+                "input": 323,
+                "output": 2762
+              }
+            }
+          ],
+          "tokenTotal": {
+            "inputTokens": 12071,
+            "outputTokens": 4052
+          }
+        }
+      ],
+      "tokenTotal": {
+        "inputTokens": 23259,
+        "outputTokens": 6386
+      }
+    }
+  ]
+}
