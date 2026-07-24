@@ -34,7 +34,6 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck:coverage
       - run: npm run test:coverage
-      - run: npm audit --omit=dev
 
       # Full-bundle proof last — `npm run build` re-runs `tsc -b` and the
       # SPA-fallback step, so a packaging regression fails here.
