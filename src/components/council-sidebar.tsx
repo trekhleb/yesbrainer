@@ -292,7 +292,14 @@ function SidebarBody({
         gap: '8px',
         boxSizing: 'border-box',
         alignItems: rail ? 'center' : 'stretch',
-        backgroundColor: theme.colors.backgroundSecondary,
+        // Desktop sidebar wears grey (`backgroundSecondary`) to separate
+        // itself from the white content column beside it. The mobile drawer
+        // overlays content on a backdrop instead, so it goes white — matching
+        // the Base Web Drawer's own `backgroundPrimary` container and the
+        // header above it, for one seamless white surface.
+        backgroundColor: inDrawer
+          ? theme.colors.backgroundPrimary
+          : theme.colors.backgroundSecondary,
       })}
     >
       {/* ── Top ─────────────────────────────────────────────────────────── */}
