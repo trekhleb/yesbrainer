@@ -129,6 +129,11 @@ export function CouncilSidebar(props: CouncilSidebarProps) {
               marginRight: 0,
               marginBottom: 0,
               marginLeft: 0,
+              // The installed PWA runs with a transparent status bar
+              // (black-translucent — see index.html), so this full-height
+              // panel reaches the physical top edge: keep the content below
+              // the clock/notch. 0 in a browser tab.
+              paddingTop: 'env(safe-area-inset-top)',
               // Stop iOS overscroll from chaining to the document (which would
               // rubber-band the drawer backdrop). See index.css.
               overscrollBehavior: 'contain',

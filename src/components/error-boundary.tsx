@@ -147,7 +147,10 @@ export class ErrorBoundary extends Component<Props, State> {
           overflow: 'auto',
           background: '#fff',
           color: '#111',
-          padding: '20px 16px',
+          // Full-bleed overlay: clear the notch / home indicator when the
+          // installed PWA draws under the transparent status bar.
+          padding:
+            'calc(20px + env(safe-area-inset-top)) 16px calc(20px + env(safe-area-inset-bottom))',
           font: '14px/1.5 -apple-system, BlinkMacSystemFont, system-ui, sans-serif',
           WebkitTextSizeAdjust: '100%',
         }}

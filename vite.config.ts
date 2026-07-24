@@ -163,10 +163,10 @@ export default defineConfig({
           'A council of AI models for the decisions that aren’t no-brainers. Browser-only and BYOK — no backend, no accounts; keys and history live only in your browser, prompts go only to the providers you choose.',
         // The installed app's splash + title bar. Pure white = the light
         // theme's `backgroundPrimary` (Base Web default, no override) that
-        // paints the content column and the mobile header — the surfaces
-        // the splash resolves into and the status bar sits against. (The
-        // body's #f6f7f9 shows only for the pre-mount instant; the old
-        // #000000 flashed a black splash before the light UI painted.)
+        // paints the content column and the mobile header — and the body +
+        // boot splash use the same white, so splash → shell hands off with
+        // no seam. (The old #000000 here flashed a black splash before the
+        // light UI painted.)
         theme_color: '#ffffff',
         background_color: '#ffffff',
         display: 'standalone',

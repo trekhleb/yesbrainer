@@ -97,6 +97,7 @@ One coherent visual system instead of stock Base Web (theme pair in `src/styles/
 - **No fake affordances; banners are for problems.** Read-only controls that look clickable, and permanent info banners, get demoted to plain text — the two deliberate exceptions are the Keys/Storage privacy banners (the headline product property, stressed on purpose).
 - **One shared type chip** (`structure-pill.tsx`) reused by sidebar cards, the New-council picker, and /about, so the type reads identically everywhere.
 - **Unified geometry & iconography.** One radius scale (10/12/14–16px); two stroke-compatible icon families (Feather + Lucide) with one deliberate exception (filled trophy = winner). Modal headers wear the icon of the trigger that opened them; sliders = council settings everywhere, the gear stays reserved for app-level Settings.
+- **Edge-to-edge installed PWA.** The app draws under a transparent status bar (metas + full rationale in `index.html`), so every full-bleed surface owns its `env(safe-area-inset-*)` padding: header and mobile drawer (top), composer and error overlay (bottom / both). iOS bakes the status-bar metas in at Add-to-Home-Screen time — re-add the app when testing changes to them.
 
 ## Code patterns
 

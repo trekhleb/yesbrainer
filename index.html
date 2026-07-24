@@ -22,6 +22,24 @@
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#161616" />
 
+    <!-- Installed-PWA status bar (iOS). Standalone web apps ignore the
+         media-attributed theme-colors above and paint an opaque bar from the
+         *sampled* page background — a color we don't control per theme
+         (that's how the light header once wore a grey #f6f7f9 strip).
+         `black-translucent` makes the bar transparent and extends the page
+         under it (viewport-fit=cover in the viewport meta above); the header
+         then paints that region itself via its `env(safe-area-inset-top)`
+         padding, exact in both themes. Every full-bleed surface must carry
+         that inset (header, mobile drawer, error overlay). iOS bakes these
+         metas into the web clip at Add-to-Home-Screen time — re-add the app
+         to pick up changes; clips added before them keep the opaque sampling
+         bar, which the pure-white body (index.css) keeps seamless in light
+         mode. Status-bar glyphs follow the *device* scheme, so a forced
+         in-app theme opposite the OS one gets low-contrast glyphs — the same
+         accepted tradeoff as the theme-colors above and the boot splash. -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
     <!-- Icons — all derived from the brand logo (public/logo.svg). favicon.svg flips
          its fill with the OS scheme; the .ico packs 16/32/48 for legacy
          UAs and search-engine crawlers. -->
@@ -90,7 +108,7 @@
          very first paint is already styled with no JS and nothing extra in
          the critical path. `index.css` doesn't apply until the module graph
          evaluates, so the splash sets its own viewport-filling background
-         (matched to the body's `#f6f7f9` / `#0e0f12`) and can't rely on it.
+         (matched to the body's `#ffffff` / `#0e0f12`) and can't rely on it.
          The mark reuses the same `logo.svg` mask as the in-app BrandMark
          (single source of truth) and flips fill by OS scheme — the app's
          own `data-theme` isn't set until React mounts, so
@@ -108,7 +126,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background: #f6f7f9;
+        background: #ffffff;
       }
       .boot-splash__mark {
         width: 72px;

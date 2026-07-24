@@ -44,11 +44,12 @@ body {
     Arial, sans-serif;
   font-size: 15px;
   line-height: 1.5;
-  /* Crisp cool near-white — the "bright/clean/modern" base. The earlier warm
-   * cream read premium-editorial but fought brightness; this airier page lets
-   * the vivid "studio" accents (solid icon-chips) pop. High-contrast ink. */
+  /* Pure white, same as the shell's `backgroundPrimary` (header / content
+   * column), so the pre-mount canvas and the app paint as one surface — and
+   * PWA web clips from before the transparent-status-bar metas (index.html),
+   * whose opaque bar samples this property live, blend in too. */
   color: #15171c;
-  background: #f6f7f9;
+  background: #ffffff;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   /* iOS Safari (browser tab) ignores `overscroll-behavior` for the *document*
