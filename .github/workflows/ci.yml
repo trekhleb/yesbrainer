@@ -1,10 +1,15 @@
 # Quality gate for every push and PR. Deploy (deploy.yml) only proves the
 # build compiles; this proves the standards hold: lint, strict type
 # coverage (≥ 99.7% non-`any` identifiers), the unit suite with its line-
-# coverage floor, and a clean audit of the dependencies that ship to
-# users. `npm audit` is scoped to prod deps so a low-severity advisory in a
-# transitive dev tool can't flake the gate — dev-dep hygiene is a
-# maintainer task, not a merge blocker.
+# coverage floor, the integration suite against the built bundle, and a
+# clean audit of the dependencies that ship to users. `npm audit` is scoped
+# to prod deps so a low-severity advisory in a transitive dev tool can't
+# flake the gate — dev-dep hygiene is a maintainer task, not a merge
+# blocker.
+#
+# The visual suite deliberately stays out: its baselines are
+# platform-suffixed and font rasterisation differs per machine, so a
+# hosted runner would diff against baselines it didn't produce.
 name: CI
 
 on:
@@ -39,3 +44,7 @@ jobs:
       # Full-bundle proof last — `npm run build` re-runs `tsc -b` and the
       # SPA-fallback step, so a packaging regression fails here.
       - run: npm run build
+
+      # Integration tests
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:integration

@@ -23,7 +23,11 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["tests", "playwright.config.ts"],
+  "include": [
+    "tests",
+    "playwright.config.ts",
+    "playwright.integration.config.ts"
+  ],
   /* Unit tests have their own project (tsconfig.unit.json) — they import
      src via the `@` alias and use JSX, which the visual-test project
      deliberately doesn't. */
