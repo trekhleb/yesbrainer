@@ -171,9 +171,13 @@ export function buildReasoningProviderOptions(
  * `display` would *turn thinking on* for a default-off model (Opus 4.8).
  * The one exception is `thinkingAlwaysOn` (Fable 5), where explicit
  * adaptive is byte-for-byte the state it already runs in. Known gap,
- * accepted: Sonnet 5 under Default thinks adaptively but invisibly — we
- * have no registry signal separating "defaults to adaptive" from
- * "defaults to off", and guessing risks billing surprises.
+ * accepted: Opus 5 and Sonnet 5 under Default think adaptively but
+ * invisibly — we have no registry signal separating "defaults to adaptive"
+ * from "defaults to off", and guessing risks billing surprises. That gap
+ * now sits on the *default seat* (Opus 5 leads the Anthropic group), so
+ * it's the obvious next thing to fix: a `thinksByDefault` registry flag
+ * would let Default carry `display` for exactly the models that were going
+ * to think anyway.
  */
 function displayOnlyReasoningOptions(
   entry: ModelEntry,
