@@ -20,7 +20,7 @@
     "dev": "vite",
     "dev-secure": "node scripts/gen-dev-cert.mjs && VITE_HTTPS=1 vite --host",
     "lan-relay": "node scripts/lan-relay.mjs",
-    "build": "tsc -b && vite build && node scripts/spa-fallback.mjs",
+    "build": "tsc -b && vite build && node scripts/prerender.mjs",
     "lint": "eslint .",
     "typecheck": "tsc -b --noEmit",
     "typecheck:coverage": "type-coverage -p tsconfig.app.json --strict --at-least 99.7",

@@ -268,18 +268,20 @@ export function AboutContent({ children }: { children?: React.ReactNode }) {
               '@media (max-width: 600px)': { fontSize: '18px' },
             })}
           >
-            A council of AI models for the decisions that aren’t no-brainers
+            Ask several AI models one question. See where they disagree.
           </div>
           <ParagraphMedium
             marginTop="0"
             marginBottom="0"
             color={theme.colors.contentSecondary}
           >
-            Ask one question and let several AI models deliberate over it —
-            answering in parallel, debating toward consensus, or judging each
-            other for a single verdict. No accounts, no server, just your
-            keys. Models can still be confidently wrong — the council&apos;s
-            job is to show you the spread; the judgment stays yours.
+            A council of AI models for the decisions that aren’t no-brainers. 
+            No account, no server, your own API keys — Yes-Brainer runs in
+            your browser and your keys go straight to the providers you pick.
+            Seat the models as a council and they answer in parallel, debate
+            toward consensus, or judge each other for a single verdict. Models
+            can still be confidently wrong — the council&apos;s job is to show
+            you the spread; the judgment stays yours.
           </ParagraphMedium>
         </div>
 

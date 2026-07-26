@@ -1,0 +1,193 @@
+[
+  {
+    "slug": "council-ai",
+    "name": "Council AI",
+    "url": "https://council-ai.app/",
+    "heading": "Yes-Brainer vs Council AI",
+    "documentTitle": "Yes-Brainer vs Council AI — an open-source, BYOK alternative",
+    "description": "How Yes-Brainer and Council AI differ: hosted subscription with conversations stored server-side, versus an open-source browser app where you bring your own API keys and data stays on your device.",
+    "lede": "Council AI is the most polished consumer product in the multi-model council space. The difference that matters when choosing between them is not the deliberation mechanic — it is where your conversations live and how you pay.",
+    "strengths": [
+      "A genuinely slick consumer product, with a wide roster of models across many providers.",
+      "Extras Yes-Brainer does not have: a personal document library, web research, file uploads and project organisation.",
+      "Nothing to set up — no API keys to create, cap or rotate, which is real work Yes-Brainer hands to you.",
+      "An MCP server that exposes the council as tools inside other assistants."
+    ],
+    "differences": [
+      {
+        "aspect": "Where conversations live",
+        "theirs": "On Council AI’s side, under their account system and terms.",
+        "ours": "In your browser’s IndexedDB. No copy is synced or held elsewhere."
+      },
+      {
+        "aspect": "Keys and billing",
+        "theirs": "Tiered subscriptions, from a free tier upward. No bring-your-own-key.",
+        "ours": "Bring your own provider keys; they stay in your browser and go to the provider you picked. No subscription and no paywall on the app itself."
+      },
+      {
+        "aspect": "Deployment",
+        "theirs": "Hosted only.",
+        "ours": "A static bundle that runs in your browser. No account, and no server run by this project holds your conversations. The bundle can be self-hosted on any static host."
+      },
+      {
+        "aspect": "Source",
+        "theirs": "Proprietary.",
+        "ours": "AGPL-3.0 — the claims on this site are checkable in the source, and hosted forks must publish their modifications."
+      },
+      {
+        "aspect": "Deliberation",
+        "theirs": "A three-stage pipeline: parallel answers, peer review, synthesis.",
+        "ours": "Three selectable structures, including a multi-round consensus debate where a Mediator judges convergence each round."
+      }
+    ],
+    "pickTheirs": "You want the least friction and the most features — no keys to manage, documents and web research built in, and conversations that follow you across devices. That is a reasonable trade and Council AI executes it well.",
+    "pickOurs": "You would rather not hand your conversations to another company, you already hold provider API keys, and you want to read the source of the thing you are pasting them into."
+  },
+  {
+    "slug": "perplexity-model-council",
+    "name": "Perplexity’s Model Council",
+    "url": "https://www.perplexity.ai/hub/blog/introducing-model-council",
+    "heading": "Yes-Brainer vs Perplexity’s Model Council",
+    "documentTitle": "Yes-Brainer vs Perplexity Model Council — a free, open-source alternative",
+    "description": "How Yes-Brainer and Perplexity’s Model Council differ: a feature inside a Perplexity paid subscription, versus a free open-source browser app where you bring your own API keys.",
+    "lede": "Perplexity’s Model Council runs several models on one question and surfaces where they agree and differ. It is a feature of a larger product; Yes-Brainer is a standalone app built around the mechanic.",
+    "strengths": [
+      "Perplexity’s search grounding is excellent, and the council inherits it — Yes-Brainer does not try to compete on retrieval.",
+      "Zero setup for anyone already subscribed: no keys, no configuration.",
+      "Backed by a company with the models and infrastructure in-house."
+    ],
+    "differences": [
+      {
+        "aspect": "Availability",
+        "theirs": "Part of a paid Perplexity subscription — check their site for which tiers currently include it.",
+        "ours": "Free to use with your own keys, on any modern browser, installable as an app."
+      },
+      {
+        "aspect": "Where conversations live",
+        "theirs": "On Perplexity’s side, under their account and terms.",
+        "ours": "In your browser. No copy is synced or held elsewhere."
+      },
+      {
+        "aspect": "Which models sit at the table",
+        "theirs": "A fixed set chosen by Perplexity.",
+        "ours": "You seat them — Anthropic, OpenAI, Google, Groq, OpenRouter, or a local Ollama, mixed in one council."
+      },
+      {
+        "aspect": "Deliberation",
+        "theirs": "Parallel answers plus a synthesiser that reports agreement and difference.",
+        "ours": "Parallel answers, anonymized peer voting with a Judge, or a multi-round debate refereed to convergence."
+      }
+    ],
+    "pickTheirs": "You already pay for Perplexity on a plan that includes it, and you want web-grounded answers with no setup. The grounding alone is a good reason.",
+    "pickOurs": "You do not want a subscription at that tier, you want to choose the models yourself, or you want the conversation to stay on your device."
+  },
+  {
+    "slug": "librechat",
+    "name": "LibreChat",
+    "url": "https://github.com/danny-avila/LibreChat",
+    "heading": "Yes-Brainer vs LibreChat",
+    "documentTitle": "Yes-Brainer vs LibreChat — zero-backend council versus self-hosted chat platform",
+    "description": "How Yes-Brainer and LibreChat differ: a mature self-hosted multi-user chat platform you run on a server, versus a zero-backend browser app built around multi-model deliberation.",
+    "lede": "Both are open source and both let you bring your own keys. They solve different problems: LibreChat is a chat platform you host for people; Yes-Brainer is a deliberation app with nothing to host.",
+    "strengths": [
+      "Far broader than Yes-Brainer as a chat platform: multi-user accounts and authentication, agents, MCP, a large provider matrix and an active ecosystem.",
+      "A real backend means real capabilities Yes-Brainer cannot offer — server-side history, shared access, and centrally managed keys for a team.",
+      "Mature, widely deployed and well documented."
+    ],
+    "differences": [
+      {
+        "aspect": "What you run",
+        "theirs": "A server you deploy and maintain (typically Docker), with a database.",
+        "ours": "A static bundle that runs in your browser. No account, and no server run by this project holds your conversations. Nothing to operate, nothing to patch."
+      },
+      {
+        "aspect": "Deliberation between models",
+        "theirs": "Models are available side by side; there is no built-in mechanic that makes them respond to each other.",
+        "ours": "Deliberation is the product: peer voting with a Judge, or a multi-round debate a Mediator drives to convergence."
+      },
+      {
+        "aspect": "Who it is for",
+        "theirs": "Teams and self-hosters who want accounts, roles and shared history.",
+        "ours": "One person on their own device. There are no accounts to give anyone."
+      },
+      {
+        "aspect": "Licence",
+        "theirs": "MIT.",
+        "ours": "AGPL-3.0 — chosen so that hosted forks stay readable too."
+      }
+    ],
+    "pickTheirs": "You want a chat platform for more than one person, or you want server-side history, agents and a managed key setup. LibreChat is the stronger tool for that job and it is not close.",
+    "pickOurs": "You want the models to actually argue with each other, and you do not want to run or trust a server to get it."
+  },
+  {
+    "slug": "big-agi",
+    "name": "Big-AGI",
+    "url": "https://big-agi.com",
+    "heading": "Yes-Brainer vs Big-AGI",
+    "documentTitle": "Yes-Brainer vs Big-AGI — a council app versus an AI workspace with Beam",
+    "description": "How Yes-Brainer and Big-AGI differ: a broad open-source AI workspace whose Beam feature merges multi-model answers, versus an app built specifically around multi-model deliberation.",
+    "lede": "Big-AGI’s Beam is the closest open-source analogue to what Yes-Brainer does — several models answer, then their answers get merged. The difference is scope: Beam is one feature of a large workspace; deliberation is the whole of Yes-Brainer.",
+    "strengths": [
+      "A much broader product — personas, many model providers, a deep feature surface, and an active project.",
+      "Beam’s fan-out-and-merge is a genuinely good implementation of the multi-model idea.",
+      "MIT-licensed and self-hostable, with a hosted option."
+    ],
+    "differences": [
+      {
+        "aspect": "Scope",
+        "theirs": "A full AI workspace; multi-model merging is one capability within it.",
+        "ours": "One thing: seat several models on a question and structure how they respond to each other."
+      },
+      {
+        "aspect": "Deliberation depth",
+        "theirs": "Fan out to several models, then merge the answers.",
+        "ours": "Adds anonymized peer voting with a Judge, and a multi-round debate where models see peers’ positions and a Mediator decides each round whether they have converged."
+      },
+      {
+        "aspect": "Deployment",
+        "theirs": "Typically self-hosted or run from the hosted instance.",
+        "ours": "A static bundle that runs in your browser. No account, and no server run by this project holds your conversations."
+      }
+    ],
+    "pickTheirs": "You want one place to do many AI things, and multi-model merging is one of them rather than the point.",
+    "pickOurs": "The deliberation is the point — you want an iterative debate with convergence reported honestly, on a phone, with nothing to host."
+  },
+  {
+    "slug": "llm-council",
+    "name": "karpathy/llm-council",
+    "url": "https://github.com/karpathy/llm-council",
+    "heading": "Yes-Brainer vs karpathy/llm-council",
+    "documentTitle": "Yes-Brainer vs karpathy/llm-council — the same idea, without the server",
+    "description": "How Yes-Brainer relates to Andrej Karpathy’s llm-council: the same council concept and prompt designs, rebuilt as a zero-backend browser app with three deliberation structures.",
+    "lede": "Yes-Brainer started from Andrej Karpathy’s llm-council — the orchestration concept and his prompt designs for judge synthesis and peer evaluation were the starting point. It is a credit, not a comparison of rivals.",
+    "strengths": [
+      "The original, and the reason this whole category exists. The prompt designs are still the reference implementation.",
+      "Small, readable and easy to hack on — it is a clear demonstration of the idea, which is what it set out to be.",
+      "A large ecosystem of forks, several of which extend it well beyond the original."
+    ],
+    "differences": [
+      {
+        "aspect": "What you run",
+        "theirs": "A local server you start yourself.",
+        "ours": "A static bundle that runs in your browser. No account, and no server run by this project holds your conversations."
+      },
+      {
+        "aspect": "Deliberation structures",
+        "theirs": "One fixed pass: answer, review, synthesize.",
+        "ours": "Three selectable structures, including a multi-round consensus debate that reports remaining conflicts rather than forcing agreement."
+      },
+      {
+        "aspect": "Conversation",
+        "theirs": "Built around a single pass.",
+        "ours": "Multi-turn sessions with follow-ups, persisted on-device, with a sidebar of past councils."
+      },
+      {
+        "aspect": "Interface",
+        "theirs": "A functional local UI.",
+        "ours": "Mobile-first and installable as an app."
+      }
+    ],
+    "pickTheirs": "You want to read or modify the original implementation, or you are happy running something locally and want the smallest, clearest version of the idea.",
+    "pickOurs": "You want to use it rather than run it — on a phone, across follow-up questions, with the debate structure chosen per council."
+  }
+]

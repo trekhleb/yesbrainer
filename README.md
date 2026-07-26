@@ -7,7 +7,7 @@
   </picture>
 </a>
 
-> **Yes-Brainer — a council of AI models for the decisions that aren’t no-brainers.** One question fans out to several LLMs — and instead of juggling browser tabs, you get a deliberation in one place: independent answers, peer review, debate, a synthesized verdict, the disagreements visible.
+> **Yes-Brainer — a council of AI models for the decisions that aren’t no-brainers.** Ask several AI models one question. See where they disagree. One question fans out to several LLMs — and instead of juggling browser tabs, you get a deliberation in one place: independent answers, peer review, debate, a synthesized verdict, the disagreements visible. No account, no server, your own API keys.
 
 **Try it: [yesbrainer.ai](https://yesbrainer.ai)** — the official deployment, built from this repository; treat any other domain as an unofficial copy. No sign-up: paste an API key and ask — or just open the recorded **demo councils** first, no key needed.
 

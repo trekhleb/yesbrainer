@@ -13,6 +13,9 @@ import { analytics } from '@/analytics'
 import { ConfirmModal, ModalTitleWithIcon } from '@/components/form-modal'
 import { LoadingText } from '@/components/loading-text'
 import { AboutPage } from '@/components/about-page'
+import { ComparisonIndexPage } from '@/components/comparison-index-page'
+import { ComparisonPage } from '@/components/comparison-page'
+import { PrivatePage } from '@/components/private-page'
 import { CouncilSettingsModal } from '@/components/council-settings-modal'
 import { CouncilSidebar } from '@/components/council-sidebar'
 import { CouncilView } from '@/components/council-view'
@@ -37,6 +40,7 @@ import { useTrackDemoOpened } from '@/hooks/use-track-demo-opened'
 import { ensurePersistedStorage } from '@/storage/persist'
 import { seedDemoCouncilsIfNeeded } from '@/storage/seed-demos'
 import { logRedactedError } from '@/utils/extract-error'
+import { slugify } from '@/utils/slug'
 import { hasUsableModel } from '@/utils/usable-models'
 import { MOBILE_MEDIA_QUERY } from '@/styles/breakpoints'
 
@@ -60,16 +64,44 @@ function CouncilApp() {
   // browser back/forward navigates between councils and middle-click /
   // cmd-click on a sidebar entry opens it in a new tab.
   const {
-    councilId: activeId,
+    councilId: routeCouncilId,
     aboutOpen,
+    privateOpen,
+    comparisonSlug,
+    comparisonIndexOpen,
+    demoSlug,
     settingsOpen,
     settingsTab,
     navigate: navigateToCouncil,
   } = useAppRoute()
   const routerNavigate = useNavigate()
-  // /about and /settings are focused full-page routes — hide the council
-  // sidebar (and its header toggle) so they read as standalone pages.
-  const chromelessPage = aboutOpen || settingsOpen
+  // /about, /private, /vs/:slug and /settings are focused full-page routes —
+  // hide the council sidebar (and its header toggle) so they read as
+  // standalone pages.
+  const chromelessPage =
+    aboutOpen ||
+    settingsOpen ||
+    privateOpen ||
+    comparisonIndexOpen ||
+    comparisonSlug !== null
+
+  // `/demo/:slug` is the *public* address of a seeded demo council — the one
+  // shape of council content that is identical for everybody, so it gets a
+  // readable, indexable URL instead of the per-device `/council/<uuid>`
+  // (a local id, meaningless in anyone else's browser). Resolved against the
+  // live list, so deleting a demo simply stops resolving rather than
+  // dangling on a hardcoded id. Slug generation must match
+  // `scripts/seo-routes.mjs`, which prerenders these same paths — see
+  // `tests/unit/slug.test.ts`.
+  const demoCouncilId = useMemo(() => {
+    if (demoSlug === null) return null
+    return (
+      councils.find((c) => c.isDemo && slugify(c.title ?? '') === demoSlug)
+        ?.id ?? null
+    )
+  }, [demoSlug, councils])
+
+  const activeId = routeCouncilId ?? demoCouncilId
   const {
     open: newCouncilOpen,
     openModal: openNewCouncilModal,
@@ -206,12 +238,15 @@ function CouncilApp() {
   // demos visible in the sidebar, opened deliberately.
   useEffect(() => {
     if (!listLoaded) return
-    // Don't redirect away from the shareable /about or /settings routes.
-    if (aboutOpen || settingsOpen) return
+    // Don't redirect away from any standalone document route (/about,
+    // /private, /vs/:slug) or /settings — they're destinations in their own
+    // right, and several are indexed, so a visitor arriving from search must
+    // stay on the page they asked for.
+    if (chromelessPage) return
     if (activeIsValid) return
     const first = councils.find((c) => !c.isDemo)
     if (first) selectActive(first.id)
-  }, [listLoaded, aboutOpen, settingsOpen, councils, activeIsValid, selectActive])
+  }, [listLoaded, chromelessPage, councils, activeIsValid, selectActive])
 
   // The council (chat) view owns its own internal padding + a pinned
   // composer, so `<main>` keeps a gutter there. Every other view is a
@@ -328,6 +363,12 @@ function CouncilApp() {
             <SettingsPage tab={settingsTab} onCouncilsChanged={refreshList} />
           ) : aboutOpen ? (
             <AboutPage demos={councils.filter((c) => c.isDemo)} />
+          ) : privateOpen ? (
+            <PrivatePage />
+          ) : comparisonIndexOpen ? (
+            <ComparisonIndexPage />
+          ) : comparisonSlug !== null ? (
+            <ComparisonPage slug={comparisonSlug} />
           ) : !listLoaded ? (
             <ParagraphSmall marginTop="0" marginBottom="0">
               <LoadingText>Convening</LoadingText>

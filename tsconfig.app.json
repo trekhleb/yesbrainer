@@ -9,6 +9,11 @@
 
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
+    // Content that must appear both in the app and in the build-time
+    // prerender (scripts/seo-routes.mjs) lives in .json so both can read one
+    // copy; the TS side assigns it to a declared type, so a drifting JSON
+    // fails typecheck instead of shipping.
+    "resolveJsonModule": true,
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
     "noEmit": true,
