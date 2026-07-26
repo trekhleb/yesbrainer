@@ -20,7 +20,7 @@ import { ProviderLogo } from '@/components/provider-logo'
 import type { useApiKeys } from '@/hooks/use-api-keys'
 import type { OllamaStatus } from '@/hooks/use-ollama-reachable'
 import { isProviderReachable } from '@/providers'
-import { registry, type ProviderId } from '@/models/registry'
+import { getModel, registry, type ProviderId } from '@/models/registry'
 
 export interface ModelOption extends Option {
   id: string
@@ -54,10 +54,11 @@ export function buildModelOptions(
   const options = registry
     // Deprecated (superseded) models never appear in pickers — history still
     // renders them via `getModel`, but new seats shouldn't start on one. A
-    // seat *already* on a deprecated model shows an empty Select value
-    // (`selectValueForModelId` finds no option) until re-pointed — acceptable
-    // for a pre-launch app with no deprecated entries yet; revisit if that
-    // state ever ships.
+    // seat *already* on a deprecated model keeps rendering its real label:
+    // `selectValueForModelId` falls back to the registry entry when the id
+    // isn't in this list, so the Select shows the seat's model while the
+    // dropdown stays clean. Net effect: a superseded model can be kept, but
+    // not newly chosen.
     .filter((m) => !m.deprecated)
     .filter((m) => m.provider !== 'ollama' || ollama.enabled)
     .map((m) => ({
@@ -138,7 +139,19 @@ export function renderModelOption({ option }: { option?: Option }) {
 
 /**
  * Resolve a `modelId` to the corresponding Base Web `Value` (a single-item
- * array) — or an empty array when the id isn't in the options list.
+ * array) — or an empty array when there's no model to show at all.
+ *
+ * A seat can legitimately point at a model `buildModelOptions` omits: a
+ * superseded (`deprecated`) entry it was seated on before the catalog moved
+ * on, or the Ollama entry while the opt-in toggle is off. Rendering those as
+ * an empty Select would read as "no model chosen" for a seat that very much
+ * has one — and the recorded demo councils, seeded into every pristine
+ * profile, sit in exactly that state after a flagship bump. So fall back to
+ * the registry for display: `getModel` resolves deprecated entries with their
+ * real label, provider, and capabilities, and degrades to its "(unlisted)"
+ * stub only for ids the catalog dropped entirely — still more legible than a
+ * blank control. Display-only: the fallback is deliberately absent from
+ * `options`, so it can be shown but not re-selected once changed.
  */
 export function selectValueForModelId(
   options: ModelOption[],
@@ -146,5 +159,14 @@ export function selectValueForModelId(
 ): Value {
   if (!modelId) return []
   const found = options.find((o) => o.id === modelId)
-  return found ? [found] : []
+  if (found) return [found]
+  const entry = getModel(modelId)
+  return [
+    {
+      id: entry.modelId,
+      label: entry.label,
+      provider: entry.provider,
+      ...(entry.smartest ? { smartest: true } : {}),
+    } satisfies ModelOption,
+  ]
 }

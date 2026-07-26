@@ -149,7 +149,32 @@ const NATIVE_MODELS = [
     // cost/capability default. (The 2-seat floor still seeds the second seat
     // from a *different* provider.) Fable 5 is an opt-in max-power option;
     // Sonnet 5 is the cheaper workhorse.
+    //
+    // Opus 5 supersedes Opus 4.8 at identical pricing, so there's no
+    // cost/capability tradeoff to weigh — it simply replaces it as the
+    // default. One behavioural difference the thinking dial depends on:
+    // thinking is ON by default here (4.8 ran without it unless asked), and
+    // `thinking:{type:'disabled'}` is only legal at effort `high` or below.
+    // Our `off` rung sends `disabled` with no `effort`, which lands on the
+    // server-side default of `high` — legal by construction, but see
+    // `providers/reasoning.ts` before adding an effort there.
+    modelId: 'anthropic:claude-opus-5',
+    label: 'Claude Opus 5',
+    provider: 'anthropic',
+    tier: 'paid',
+    country: 'USA',
+    developer: 'Anthropic',
+    contextWindow: 1_000_000,
+    capabilities: { tools: true, vision: true, reasoning: true },
+    defaultSystemPrompt: DEFAULT_PARTICIPANT_PROMPT,
+  },
+  {
+    // Superseded by Opus 5 above. Kept listed rather than deleted so the
+    // recorded demo councils (and any council persisted while it was the
+    // default) keep their real label, logo, and capabilities instead of
+    // degrading to the `getModel` stub.
     modelId: 'anthropic:claude-opus-4-8',
+    deprecated: true,
     label: 'Claude Opus 4.8',
     provider: 'anthropic',
     tier: 'paid',
@@ -205,16 +230,55 @@ const NATIVE_MODELS = [
 
   /* ---------- OpenAI -------------- */
   {
-    // GPT-5.5 leads the OpenAI group: OpenAI's current API flagship (strongest
-    // reasoning/coding, ~1M context), so an OpenAI-key user's default seat is a
-    // true flagship — the same intent as Opus leading Anthropic. The cheaper
-    // GPT-5.4 tier (frontier / mini / nano) follows. Also the `smartest` pick,
-    // deliberately: OpenAI's true top model, gpt-5.5-pro, does NOT support
-    // streaming (per its model page) and every participant seat here
-    // streams — so Pro is unusable as a seat. Re-check if OpenAI ever ships
+    // Sol leads the OpenAI group: the top rung of the GPT-5.6 generation
+    // (~1M context), so an OpenAI-key user's default seat is a true
+    // flagship — the same intent as Opus leading Anthropic. GPT-5.6 ships as
+    // three named price tiers rather than one model: Sol, then Terra and Luna
+    // below, with the GPT-5.4 mini/nano pair still covering the budget end.
+    //
+    // Also the `smartest` pick, deliberately: each 5.6 tier has a `-pro`
+    // sibling, and the pro tier does NOT support streaming (the same
+    // constraint that kept gpt-5.5-pro out) — every participant seat here
+    // streams, so Pro is unusable as a seat. Re-check if OpenAI ever ships
     // streaming for the pro tier.
-    modelId: 'openai:gpt-5.5',
+    modelId: 'openai:gpt-5.6-sol',
     smartest: true,
+    label: 'GPT-5.6 Sol',
+    provider: 'openai',
+    tier: 'paid',
+    country: 'USA',
+    developer: 'OpenAI',
+    contextWindow: 1_000_000,
+    capabilities: { tools: true, vision: true, reasoning: true },
+    defaultSystemPrompt: DEFAULT_PARTICIPANT_PROMPT,
+  },
+  {
+    modelId: 'openai:gpt-5.6-terra',
+    label: 'GPT-5.6 Terra',
+    provider: 'openai',
+    tier: 'paid',
+    country: 'USA',
+    developer: 'OpenAI',
+    contextWindow: 1_000_000,
+    capabilities: { tools: true, vision: true, reasoning: true },
+    defaultSystemPrompt: DEFAULT_PARTICIPANT_PROMPT,
+  },
+  {
+    modelId: 'openai:gpt-5.6-luna',
+    label: 'GPT-5.6 Luna',
+    provider: 'openai',
+    tier: 'paid',
+    country: 'USA',
+    developer: 'OpenAI',
+    contextWindow: 1_000_000,
+    capabilities: { tools: true, vision: true, reasoning: true },
+    defaultSystemPrompt: DEFAULT_PARTICIPANT_PROMPT,
+  },
+  {
+    // Superseded by the GPT-5.6 tier above; kept listed (see the `deprecated`
+    // field doc) because the recorded demo councils seat it.
+    modelId: 'openai:gpt-5.5',
+    deprecated: true,
     label: 'GPT-5.5',
     provider: 'openai',
     tier: 'paid',
@@ -225,9 +289,11 @@ const NATIVE_MODELS = [
     defaultSystemPrompt: DEFAULT_PARTICIPANT_PROMPT,
   },
   {
-    // GPT-5.4 context windows are best-effort (GPT-5-class ~400K; OpenAI's
-    // docs don't publish an exact figure for the 5.4 tier) — refine if needed.
+    // Superseded by GPT-5.6 Terra (same mid price point). GPT-5.4 context
+    // windows are best-effort (GPT-5-class ~400K; OpenAI's docs don't publish
+    // an exact figure for the 5.4 tier) — refine if needed.
     modelId: 'openai:gpt-5.4',
+    deprecated: true,
     label: 'GPT-5.4',
     provider: 'openai',
     tier: 'paid',
@@ -263,11 +329,24 @@ const NATIVE_MODELS = [
   /* ---------- Google -------------- */
   {
     // Leads the Google group as the *default* seat: newer than 3.1 Pro
-    // (Google's versioning is non-linear), GA/stable, and billed by Google as
-    // "most intelligent … on agentic and coding tasks". NOT the `smartest`
-    // pick though — 3.1 Pro (below) wins the deep-reasoning benchmarks this
-    // app's deliberation workload leans on, so the explicit flag sits there.
+    // (Google's versioning is non-linear), GA/stable, and the current top of
+    // the Flash line. NOT the `smartest` pick though — 3.1 Pro (below) wins
+    // the deep-reasoning benchmarks this app's deliberation workload leans
+    // on, so the explicit flag sits there.
+    modelId: 'google:gemini-3.6-flash',
+    label: 'Gemini 3.6 Flash',
+    provider: 'google',
+    tier: 'paid',
+    country: 'USA',
+    developer: 'Google',
+    contextWindow: 1_000_000,
+    capabilities: { tools: true, vision: true, reasoning: true },
+    defaultSystemPrompt: DEFAULT_PARTICIPANT_PROMPT,
+  },
+  {
+    // Superseded by 3.6 Flash above.
     modelId: 'google:gemini-3.5-flash',
+    deprecated: true,
     label: 'Gemini 3.5 Flash',
     provider: 'google',
     tier: 'paid',
@@ -300,7 +379,23 @@ const NATIVE_MODELS = [
     defaultSystemPrompt: DEFAULT_PARTICIPANT_PROMPT,
   },
   {
+    // The cheap tier, and the Google rung of `TITLE_GENERATOR_CHAIN`
+    // (`storage/behavior.ts`) — keep that chain pointed here, not at the
+    // superseded 3.1 below.
+    modelId: 'google:gemini-3.5-flash-lite',
+    label: 'Gemini 3.5 Flash-Lite',
+    provider: 'google',
+    tier: 'paid',
+    country: 'USA',
+    developer: 'Google',
+    contextWindow: 1_000_000,
+    capabilities: { tools: true, vision: true, reasoning: true },
+    defaultSystemPrompt: DEFAULT_PARTICIPANT_PROMPT,
+  },
+  {
+    // Superseded by 3.5 Flash-Lite above.
     modelId: 'google:gemini-3.1-flash-lite',
+    deprecated: true,
     label: 'Gemini 3.1 Flash-Lite',
     provider: 'google',
     tier: 'paid',

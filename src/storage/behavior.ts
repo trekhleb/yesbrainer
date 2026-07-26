@@ -119,7 +119,7 @@ export interface BehaviorSettings {
   /**
    * Preferred model for the LLM title-generator chain. When set,
    * the orchestrator tries this model first; falls back to the built-in
-   * priority chain (gpt-5.4-nano → gemini-3.1-flash-lite → haiku-4.5 → ollama:llama3.1)
+   * priority chain (gpt-5.4-nano → gemini-3.5-flash-lite → haiku-4.5 → ollama:llama3.1)
    * on auth / network / parse error. Undefined (the default) means
    * "use the chain from the top". Useful when an operator wants a
    * deterministic titler — e.g. always Ollama for offline work, or
@@ -256,11 +256,15 @@ export const DEFAULT_MIN_COMMENT_LENGTH = 0
  * the noise.
  *
  * Models referenced here must exist in `registry.ts` — keep this list
- * trimmed when a registry entry is renamed or removed.
+ * trimmed when a registry entry is renamed or removed. They must also be
+ * non-deprecated: `pickTitleModelId` resolves straight off `registry` and
+ * does *not* filter superseded entries, so a stale id here would silently
+ * keep titling on a model the pickers no longer offer. Guarded by
+ * `tests/unit/models/registry.test.ts`.
  */
 export const TITLE_GENERATOR_CHAIN: readonly NativeModelId[] = [
   'openai:gpt-5.4-nano',
-  'google:gemini-3.1-flash-lite',
+  'google:gemini-3.5-flash-lite',
   'anthropic:claude-haiku-4-5',
   'ollama:llama3.1',
 ] as const
