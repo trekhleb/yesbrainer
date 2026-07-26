@@ -72,7 +72,10 @@ test('new council: "Smartest available" preset seats one flagship per provider',
   await page.getByRole('button', { name: 'Smartest available' }).click()
   const roster = dialog(page)
   await expect(roster.getByText('Claude Fable 5')).toBeVisible()
-  await expect(roster.getByText('GPT-5.5', { exact: false })).toBeVisible()
+  // Loose match on the generation, not the variant: the preset seats
+  // whichever GPT-5.6 tier the registry ranks highest (Sol today), so a
+  // Luna/Sol/Terra reshuffle shouldn't fail this. Bump when the generation does.
+  await expect(roster.getByText('GPT-5.6', { exact: false })).toBeVisible()
   await expect(roster.getByText('Gemini 3.1 Pro')).toBeVisible()
   // One seat per reachable provider (OpenRouter excluded) → four rows.
   await expect(
