@@ -2,8 +2,8 @@
 
 <a href="https://yesbrainer.ai">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="./public/banner-v3-dark.jpg">
-    <img alt="Yes-Brainer — a council of AI models for the decisions that aren’t no-brainers. One question fans out to several models: Parallel (many answers), Consensus (debate to one), Trial (a judge model picks a verdict)." src="./public/banner-v4-light.png">
+    <source media="(prefers-color-scheme: dark)" srcset="./public/banner-v4-dark.jpg">
+    <img alt="Yes-Brainer — a council of AI models for the decisions that aren’t no-brainers. One question fans out to several models: Parallel (many answers), Consensus (debate to one), Trial (a judge model picks a verdict)." src="./public/banner-v4-light.jpg">
   </picture>
 </a>
 
