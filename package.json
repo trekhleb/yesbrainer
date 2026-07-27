@@ -27,6 +27,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage --no-file-parallelism",
+    "test:integration": "playwright test --config=playwright.integration.config.ts",
     "test:visual": "playwright test",
     "test:visual:update": "playwright test --update-snapshots",
     "test:visual:gallery": "node scripts/visual-gallery.mjs",
