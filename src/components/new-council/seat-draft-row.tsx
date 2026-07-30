@@ -11,14 +11,13 @@
 import type { ReactNode } from 'react'
 import { useStyletron } from 'baseui'
 import { Button, KIND, SIZE } from 'baseui/button'
-import { Select, SIZE as SelectSize } from 'baseui/select'
+import { Select } from 'baseui/select'
 import { FiX } from 'react-icons/fi'
 import {
+  MODEL_PICKER_SELECT_PROPS,
   type ModelOption,
-  renderModelOption,
   selectValueForModelId,
 } from '@/components/model-options'
-import { MODEL_PICKER_SELECT_OVERRIDES } from '@/utils/select-overrides'
 
 export interface SeatDraft {
   id: string
@@ -51,17 +50,12 @@ export function SeatDraftRow({
     >
       <div className={css({ flex: 1, minWidth: 0 })}>
         <Select
+          {...MODEL_PICKER_SELECT_PROPS}
           options={options}
           value={selectValueForModelId(options, seat.modelId)}
           onChange={({ option }) => {
             if (option && option.id) onChange(String(option.id))
           }}
-          size={SelectSize.compact}
-          clearable={false}
-          searchable={false}
-          overrides={MODEL_PICKER_SELECT_OVERRIDES}
-          getOptionLabel={renderModelOption}
-          getValueLabel={renderModelOption}
         />
       </div>
       {trailing}

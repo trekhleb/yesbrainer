@@ -27,12 +27,9 @@ import {
 import { registry } from '@/models/registry'
 import {
   buildModelOptions,
-  renderModelOption,
+  MODEL_PICKER_SELECT_PROPS,
 } from '@/components/model-options'
-import {
-  MODEL_PICKER_SELECT_OVERRIDES,
-  NO_KEYBOARD_SELECT_OVERRIDES,
-} from '@/utils/select-overrides'
+import { NO_KEYBOARD_SELECT_OVERRIDES } from '@/utils/select-overrides'
 
 export function BehaviorNumberField({
   label,
@@ -197,6 +194,7 @@ export function TitleModelField({
       }
     >
       <Select
+        {...MODEL_PICKER_SELECT_PROPS}
         options={options}
         value={selectedOption ? [selectedOption] : []}
         onChange={({ option }) => {
@@ -204,12 +202,6 @@ export function TitleModelField({
           const id = String(option.id)
           onChange(id === AUTO_ID ? undefined : id)
         }}
-        size={SelectSize.compact}
-        clearable={false}
-        searchable={false}
-        overrides={MODEL_PICKER_SELECT_OVERRIDES}
-        getOptionLabel={renderModelOption}
-        getValueLabel={renderModelOption}
       />
     </FormControl>
   )

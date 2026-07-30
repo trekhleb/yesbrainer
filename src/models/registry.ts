@@ -461,8 +461,8 @@ const NATIVE_MODELS = [
 export type NativeModelId = (typeof NATIVE_MODELS)[number]['modelId']
 
 /**
- * Full catalog: the native (direct-routed) providers above, plus the curated
- * OpenRouter slice from `registry.generated.ts` (refresh it with
+ * Full catalog: the native (direct-routed) providers above, plus the full
+ * OpenRouter snapshot from `registry.generated.ts` (refresh it with
  * `npm run update-models-catalog`). The generated entries omit
  * `defaultSystemPrompt`; we add the shared default here.
  */

@@ -31,6 +31,41 @@ describe('buildModelOptions', () => {
       ).toBe(false)
     }
   })
+
+  it('unlocks routed Anthropic and OpenAI models with only an OpenRouter key', () => {
+    const options = buildModelOptions(
+      { openrouter: 'test-key' },
+      { enabled: false, reachable: false },
+    )
+    const routedAnthropic = options.find((o) =>
+      o.id.startsWith('openrouter:anthropic/'),
+    )
+    const routedOpenAI = options.find((o) =>
+      o.id.startsWith('openrouter:openai/'),
+    )
+    expect(routedAnthropic?.disabled).toBe(false)
+    expect(routedOpenAI?.disabled).toBe(false)
+
+    const nativeAnthropic = options.find((o) =>
+      o.id.startsWith('anthropic:'),
+    )
+    const nativeOpenAI = options.find((o) => o.id.startsWith('openai:'))
+    expect(nativeAnthropic?.disabled).toBe(true)
+    expect(nativeOpenAI?.disabled).toBe(true)
+  })
+
+  it('reuses options for the same provider reachability state', () => {
+    const first = buildModelOptions(
+      { openrouter: 'first-key-value' },
+      { enabled: false, reachable: false },
+    )
+    const second = buildModelOptions(
+      { openrouter: 'different-key-value' },
+      { enabled: false, reachable: false },
+    )
+
+    expect(second).toBe(first)
+  })
 })
 
 describe('selectValueForModelId', () => {

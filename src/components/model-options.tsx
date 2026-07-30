@@ -13,25 +13,52 @@
  * sites can drop it straight into `getOptionLabel` / `getValueLabel`.
  */
 
-import type { Option, Value } from 'baseui/select'
+import { SIZE as SelectSize, type Option, type Value } from 'baseui/select'
 import { Link } from 'react-router-dom'
 import { ModelCapabilityIcons } from '@/components/model-capability-icons'
 import { ProviderLogo } from '@/components/provider-logo'
+import { VirtualizedModelMenu } from '@/components/virtualized-model-menu'
 import type { useApiKeys } from '@/hooks/use-api-keys'
 import type { OllamaStatus } from '@/hooks/use-ollama-reachable'
 import { isProviderReachable } from '@/providers'
-import { getModel, registry, type ProviderId } from '@/models/registry'
+import {
+  getModel,
+  PROVIDER_IDS,
+  registry,
+  type ProviderId,
+} from '@/models/registry'
+import { formatContextWindow } from '@/utils/format-tokens'
+import { MODEL_PICKER_SELECT_OVERRIDES } from '@/utils/select-overrides'
 
 export interface ModelOption extends Option {
   id: string
   label: string
   provider: ProviderId
+  contextWindow: number
   disabled?: boolean
   /** Mirrors the registry entry's `smartest` flag — the provider's most
    *  powerful model. Lets UI copy about the "Smartest available" preset
    *  (e.g. the roster tooltip) derive from the same designation
    *  `pickSmartestModelIds` seats, instead of a parallel rule. */
   smartest?: boolean
+}
+
+/**
+ * Model reachability has only a small finite state space: key present/missing
+ * per provider, plus Ollama enabled/reachable. Cache by that state instead of
+ * rebuilding hundreds of identical option objects for every picker instance
+ * and parent render. Key contents never enter the cache key.
+ */
+const modelOptionsCache = new Map<string, ModelOption[]>()
+
+function modelOptionsCacheKey(
+  keys: ReturnType<typeof useApiKeys>,
+  ollama: Pick<OllamaStatus, 'enabled' | 'reachable'>,
+): string {
+  const keyedProviders = PROVIDER_IDS
+    .map((provider) => `${provider}:${keys[provider] ? 1 : 0}`)
+    .join('|')
+  return `${keyedProviders}|ollama-enabled:${ollama.enabled ? 1 : 0}|ollama-reachable:${ollama.reachable ? 1 : 0}`
 }
 
 /**
@@ -51,6 +78,10 @@ export function buildModelOptions(
   keys: ReturnType<typeof useApiKeys>,
   ollama: Pick<OllamaStatus, 'enabled' | 'reachable'>,
 ): ModelOption[] {
+  const cacheKey = modelOptionsCacheKey(keys, ollama)
+  const cached = modelOptionsCache.get(cacheKey)
+  if (cached) return cached
+
   const options = registry
     // Deprecated (superseded) models never appear in pickers — history still
     // renders them via `getModel`, but new seats shouldn't start on one. A
@@ -65,6 +96,7 @@ export function buildModelOptions(
       id: m.modelId,
       label: m.label,
       provider: m.provider,
+      contextWindow: m.contextWindow,
       disabled: !isProviderReachable(m, keys, ollama.reachable),
       ...(m.smartest ? { smartest: true } : {}),
     }))
@@ -72,20 +104,45 @@ export function buildModelOptions(
   // not-running local Ollama) after — a stable partition that keeps registry
   // order within each group. Without it the registry-first Ollama entry sits
   // at the top even when its daemon is down, above selectable cloud models.
-  return [
+  const ordered = [
     ...options.filter((o) => !o.disabled),
     ...options.filter((o) => o.disabled),
   ]
+  modelOptionsCache.set(cacheKey, ordered)
+  return ordered
 }
 
 /**
- * The option renderer used by all model `<Select>` pickers. Shows the
- * provider logo + label; disabled rows carry an unobtrusive but actionable
- * "add key" link into Settings → Keys (clicks land on the anchor even
- * though the row itself is non-selectable). The New-council modal closes
- * itself when the navigation drops its `?new-council` param; the
- * state-driven Council-settings modal is closed by the settings route
- * (see the effect in `app.tsx`).
+ * Dropdown rows intentionally stay text-only. A full OpenRouter catalog is
+ * only a few hundred strings, but expanding every string into a provider
+ * avatar plus several tooltip/icon subtrees made opening the menu mount nearly
+ * 10,000 DOM nodes. The selected value still uses the rich renderer below;
+ * the scrolling/searching menu uses this cheap representation.
+ */
+export function renderModelDropdownOption({ option }: { option?: Option }) {
+  if (!option) return null
+  const provider = option.provider as ProviderId | undefined
+  const contextWindow =
+    typeof option.contextWindow === 'number' ? option.contextWindow : undefined
+  const unavailable =
+    option.disabled && provider
+      ? provider === 'ollama'
+        ? ' · not running'
+        : ' · add key in Settings'
+      : ''
+  return (
+    <span>
+      {option.label as React.ReactNode}
+      {contextWindow ? ` · ${formatContextWindow(contextWindow)}` : ''}
+      {unavailable}
+    </span>
+  )
+}
+
+/**
+ * The selected-value renderer used by all model `<Select>` pickers. Only one
+ * selected value is mounted per control, so this is the appropriate place for
+ * provider branding and the richer capability metadata.
  */
 export function renderModelOption({ option }: { option?: Option }) {
   if (!option) return null
@@ -138,6 +195,23 @@ export function renderModelOption({ option }: { option?: Option }) {
 }
 
 /**
+ * Interaction and rendering policy shared by every model Select. Keeping
+ * search here prevents one of the participant, synthesiser, or titler
+ * surfaces from silently falling back to a hundreds-row scroll-only menu.
+ */
+export const MODEL_PICKER_SELECT_PROPS = {
+  size: SelectSize.compact,
+  clearable: false,
+  searchable: true,
+  overrides: {
+    ...MODEL_PICKER_SELECT_OVERRIDES,
+    StatefulMenu: { component: VirtualizedModelMenu },
+  },
+  getOptionLabel: renderModelDropdownOption,
+  getValueLabel: renderModelOption,
+} as const
+
+/**
  * Resolve a `modelId` to the corresponding Base Web `Value` (a single-item
  * array) — or an empty array when there's no model to show at all.
  *
@@ -166,6 +240,7 @@ export function selectValueForModelId(
       id: entry.modelId,
       label: entry.label,
       provider: entry.provider,
+      contextWindow: entry.contextWindow,
       ...(entry.smartest ? { smartest: true } : {}),
     } satisfies ModelOption,
   ]

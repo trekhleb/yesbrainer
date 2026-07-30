@@ -138,7 +138,21 @@ export function useSettingsPanel(
     PanelContainer: {
       style: {
         marginBottom: compact ? '0' : '12px',
-        border: `1px solid ${theme.colors.borderOpaque}`,
+        // Base Web's PanelContainer defines its bottom edge in longhand.
+        // Keep all four edges longhand too: Styletron's atomic renderer
+        // cannot safely combine a `border` shorthand with those declarations.
+        borderTopWidth: '1px',
+        borderRightWidth: '1px',
+        borderBottomWidth: '1px',
+        borderLeftWidth: '1px',
+        borderTopStyle: 'solid',
+        borderRightStyle: 'solid',
+        borderBottomStyle: 'solid',
+        borderLeftStyle: 'solid',
+        borderTopColor: theme.colors.borderOpaque,
+        borderRightColor: theme.colors.borderOpaque,
+        borderBottomColor: theme.colors.borderOpaque,
+        borderLeftColor: theme.colors.borderOpaque,
         borderRadius: compact ? '10px' : '12px',
         overflow: 'hidden',
         backgroundColor: theme.colors.backgroundPrimary,

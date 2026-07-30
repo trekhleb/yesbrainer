@@ -129,7 +129,7 @@ Paste keys into **Settings → Keys**; the first-run onboarding's "Add your keys
 | **OpenAI** (GPT) | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
 | **Google** (Gemini) | [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) |
 | **Groq** | [console.groq.com/keys](https://console.groq.com/keys) |
-| **OpenRouter** | [openrouter.ai/keys](https://openrouter.ai/keys) — one key routes to many vendors |
+| **OpenRouter** | [openrouter.ai/keys](https://openrouter.ai/keys) — used for models routed through OpenRouter; the [build-time catalog snapshot](./DEVELOPMENT.md#model-registry) includes routes from many vendors |
 | **Ollama** | no key — runs locally; setup below |
 
 Pricing, free tiers, and signup requirements are each provider's own and change on their schedule — check their pages. Local **Ollama** needs no key at all: install from [ollama.com](https://ollama.com), `ollama pull llama3.1`, then flip **"Enable Ollama on localhost"** at the bottom of Settings → Keys (off by default). On the hosted app, start the daemon with `OLLAMA_ORIGINS=<site origin>` so it accepts the cross-origin call.
