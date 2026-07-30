@@ -89,6 +89,26 @@ describe('RosterEditor', () => {
     const { container } = mount()
     expectPickerAcceptsImmediateSearch(container)
   })
+
+  it('keeps full-catalog dropdown rows lightweight', () => {
+    const { container } = mount()
+    const input = container.querySelector('input')
+    expect(input).not.toBeNull()
+
+    fireEvent.click(input!)
+
+    const menu = document.querySelector('[data-baseweb="menu"]')
+    expect(menu).not.toBeNull()
+    const renderedOptions = menu?.querySelectorAll('[role="option"]')
+    expect(renderedOptions?.length).toBeGreaterThan(0)
+    expect(renderedOptions?.length).toBeLessThanOrEqual(20)
+    expect(renderedOptions?.[0]?.getAttribute('aria-setsize')).toBe(
+      String(modelOptions().length),
+    )
+    expect(
+      menu?.querySelectorAll('[aria-label="Model capabilities"]'),
+    ).toHaveLength(0)
+  })
 })
 
 describe('TitleModelField', () => {

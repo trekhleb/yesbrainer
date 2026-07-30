@@ -53,6 +53,19 @@ describe('buildModelOptions', () => {
     expect(nativeAnthropic?.disabled).toBe(true)
     expect(nativeOpenAI?.disabled).toBe(true)
   })
+
+  it('reuses options for the same provider reachability state', () => {
+    const first = buildModelOptions(
+      { openrouter: 'first-key-value' },
+      { enabled: false, reachable: false },
+    )
+    const second = buildModelOptions(
+      { openrouter: 'different-key-value' },
+      { enabled: false, reachable: false },
+    )
+
+    expect(second).toBe(first)
+  })
 })
 
 describe('selectValueForModelId', () => {
