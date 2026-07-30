@@ -24,10 +24,10 @@ export const NO_KEYBOARD_SELECT_OVERRIDES: SelectOverrides = {
  * shrink-wraps its content, so in the closed control the row had no width
  * to stretch into and the icons huddled left after the label. Growing it
  * makes the closed control mirror the dropdown rows, and the stacked seat
- * pickers line their metadata up into one scannable column. Extends the
- * no-keyboard override — every model picker wants both.
+ * pickers line their metadata up into one scannable column. Model pickers are
+ * searchable, so this deliberately does NOT inherit the `inputMode: none`
+ * override used by short non-searchable selects.
  */
 export const MODEL_PICKER_SELECT_OVERRIDES: SelectOverrides = {
-  ...NO_KEYBOARD_SELECT_OVERRIDES,
   SingleValue: { style: { flexGrow: 1 } },
 }

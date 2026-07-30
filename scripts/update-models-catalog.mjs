@@ -14,14 +14,19 @@
 // VENDOR_META below, and derive a coarse `tier` from pricing. Capabilities
 // (vision/tools/reasoning) and context come from OpenRouter's metadata.
 //
-// Curation: only ids in ALLOWED_OPENROUTER_MODEL_IDS are emitted (a 343-model dropdown is unusable).
-// The script also prints "discovered" models from tracked vendors that aren't
-// in ALLOWED_OPENROUTER_MODEL_IDS yet — that's your nudge when, e.g., a new Opus ships. Add the id to
-// ALLOWED_OPENROUTER_MODEL_IDS and re-run.
+// Every model returned by OpenRouter is emitted. The provider owns availability
+// and account-level access; this snapshot must not second-guess that catalog or
+// force users toward separate native-provider keys.
 
 import { writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import {
+  compareCatalogEntries,
+  normalizeContextWindow,
+  parseOpenRouterCatalog,
+  quoteTsString,
+} from './openrouter-catalog.mjs'
 
 const ENDPOINT = 'https://openrouter.ai/api/v1/models'
 const OUT = join(
@@ -32,8 +37,7 @@ const OUT = join(
   'registry.generated.ts',
 )
 
-// Vendor id-prefix → the editorial metadata OpenRouter doesn't provide. Also
-// the set of vendors we watch for "discovered" (new) models.
+// Vendor id-prefix → the editorial metadata OpenRouter doesn't provide.
 const VENDOR_META = {
   anthropic: { developer: 'Anthropic', country: 'USA' },
   openai: { developer: 'OpenAI', country: 'USA' },
@@ -47,42 +51,7 @@ const VENDOR_META = {
   cohere: { developer: 'Cohere', country: 'Canada' },
 }
 
-// Curated allow-list — which OpenRouter models surface in the picker. Keep it
-// vendor-diverse; native-routed providers (Anthropic/OpenAI/Google/Groq) stay
-// in registry.ts, so prefer vendors we DON'T cover natively here.
-// One current flagship per vendor: grok-4.3→4.5,
-// deepseek chat+r1→v4-pro, qwen 2.5→3.7-max, mistral-large→-2512, +kimi.
-const ALLOWED_OPENROUTER_MODEL_IDS = [
-  'deepseek/deepseek-v4-pro',
-  'qwen/qwen3.7-max',
-  'moonshotai/kimi-k2.6',
-  'mistralai/mistral-large-2512',
-  'x-ai/grok-4.5',
-  'cohere/command-a',
-]
-
 const vendorOf = (id) => id.split('/')[0]
-
-// Single-quoted TS string literal (matches the codebase + keeps the generated
-// file lint-clean). This script writes *source code* from API data, so every
-// interpolated value must be inert: strings go through here (quote/backslash/
-// newline-escaped so a crafted model name can neither break out of the
-// literal nor break the build), numbers through `int()` below.
-const q = (s) =>
-  `'${String(s)
-    .replace(/\\/g, '\\\\')
-    .replace(/'/g, "\\'")
-    .replace(/\r?\n|[\u2028\u2029]/g, '\\n')}'`
-
-// Coerce an API-sourced value to a safe non-negative integer literal — a
-// string here would otherwise be interpolated raw into the generated TS
-// (i.e. code injection from a compromised catalog response).
-const int = (v) => {
-  const n = Math.trunc(Number(v))
-  // Clamp to a sane ceiling too — a context window is at most a few
-  // million tokens; anything wilder is a bogus catalog value.
-  return Number.isFinite(n) && n >= 0 ? Math.min(n, 100_000_000) : 0
-}
 
 // Keep OpenRouter's full "Vendor: Model" name — the picker shows the
 // *OpenRouter* logo (not the vendor's), so the label has to carry the vendor.
@@ -103,7 +72,9 @@ function toEntry(m) {
     tier: Number(m.pricing?.prompt ?? '0') === 0 ? 'free' : 'paid',
     country: meta.country,
     developer: meta.developer,
-    contextWindow: int(m.context_length ?? m.top_provider?.context_length),
+    contextWindow: normalizeContextWindow(
+      m.context_length ?? m.top_provider?.context_length,
+    ),
     capabilities: {
       tools: params.includes('tools'),
       vision: inputs.includes('image'),
@@ -118,33 +89,30 @@ if (!res.ok) {
   console.error(`✖ OpenRouter ${ENDPOINT} → ${res.status}`)
   process.exit(1)
 }
-const { data } = await res.json()
-const byId = new Map(data.map((m) => [m.id, m]))
-
-const entries = []
-const missing = []
-for (const id of ALLOWED_OPENROUTER_MODEL_IDS) {
-  const m = byId.get(id)
-  if (m) entries.push(toEntry(m))
-  else missing.push(id)
+const payload = parseOpenRouterCatalog(await res.json())
+if (!payload.ok) {
+  console.error('✖ OpenRouter catalog response has no valid data array')
+  process.exit(1)
 }
-entries.sort((a, b) => a.label.localeCompare(b.label))
+if (payload.rejectedIndexes.length > 0) {
+  console.warn(
+    `⚠ skipped ${payload.rejectedIndexes.length} invalid OpenRouter catalog row(s) at indexes: ${payload.rejectedIndexes.join(', ')}`,
+  )
+}
 
-const discovered = data
-  .map((m) => m.id)
-  .filter((id) => VENDOR_META[vendorOf(id)] && !ALLOWED_OPENROUTER_MODEL_IDS.includes(id))
-  .sort()
+const entries = payload.models.map(toEntry)
+entries.sort(compareCatalogEntries)
 
 const body = entries
   .map(
     (e) => `  {
-    modelId: ${q(e.modelId)},
-    label: ${q(e.label)},
+    modelId: ${quoteTsString(e.modelId)},
+    label: ${quoteTsString(e.label)},
     provider: 'openrouter',
-    providerModelId: ${q(e.providerModelId)},
-    tier: ${q(e.tier)},
-    country: ${q(e.country)},
-    developer: ${q(e.developer)},
+    providerModelId: ${quoteTsString(e.providerModelId)},
+    tier: ${quoteTsString(e.tier)},
+    country: ${quoteTsString(e.country)},
+    developer: ${quoteTsString(e.developer)},
     contextWindow: ${e.contextWindow},
     capabilities: { tools: ${e.capabilities.tools}, vision: ${e.capabilities.vision}, reasoning: ${e.capabilities.reasoning} },
   },`,
@@ -153,7 +121,7 @@ const body = entries
 
 const file = `// AUTO-GENERATED by \`npm run update-models-catalog\` — do not edit by hand.
 // Source: OpenRouter ${ENDPOINT}. The native (direct-routed) providers live in
-// registry.ts; this file is only the curated OpenRouter slice. \`registry.ts\`
+// registry.ts; this file is the full OpenRouter snapshot. \`registry.ts\`
 // spreads these in and adds \`defaultSystemPrompt\`.
 
 import type { ModelEntry } from './registry'
@@ -165,9 +133,3 @@ ${body}
 
 writeFileSync(OUT, file)
 console.log(`✓ wrote ${entries.length} OpenRouter models → ${OUT}`)
-if (missing.length)
-  console.warn(`⚠ listed but not in OpenRouter's catalog (drop or fix):\n   ${missing.join('\n   ')}`)
-if (discovered.length)
-  console.log(
-    `ℹ ${discovered.length} more models from tracked vendors — add any to ALLOWED_OPENROUTER_MODEL_IDS to include:\n   ${discovered.slice(0, 30).join('\n   ')}${discovered.length > 30 ? '\n   …' : ''}`,
-  )

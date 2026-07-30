@@ -1,5 +1,6 @@
 import { fireEvent } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { SynthesiserPicker } from '@/components/new-council/synthesiser-picker'
 import { RosterEditor } from '@/components/roster-editor'
 import { TitleModelField } from '@/components/settings/behavior-fields'
 import { buildModelOptions } from '@/components/model-options'
@@ -16,6 +17,20 @@ beforeEach(() => {
 
 function modelOptions() {
   return buildModelOptions({ anthropic: 'k', openai: 'k' }, ollama)
+}
+
+function expectPickerAcceptsImmediateSearch(
+  container: HTMLElement,
+): void {
+  const input = container.querySelector('input')
+  expect(input).not.toBeNull()
+  expect(input?.readOnly).toBe(false)
+  expect(input?.inputMode).not.toBe('none')
+  fireEvent.click(input!)
+  fireEvent.change(input!, { target: { value: 'zz' } })
+  expect(document.activeElement).toBe(input)
+  expect(input?.value).toBe('zz')
+  expect(document.body.textContent).toContain('No results')
 }
 
 describe('RosterEditor', () => {
@@ -69,6 +84,11 @@ describe('RosterEditor', () => {
     const { container } = mount({ noUsableModel: true, onNavigateToKeys: vi.fn() })
     expect(container.textContent?.toLowerCase()).toMatch(/key/)
   })
+
+  it('focuses a searchable input when a participant picker opens', () => {
+    const { container } = mount()
+    expectPickerAcceptsImmediateSearch(container)
+  })
 })
 
 describe('TitleModelField', () => {
@@ -85,5 +105,26 @@ describe('TitleModelField', () => {
       fireEvent.click(reset)
       expect(onChange).toHaveBeenCalledWith(undefined)
     }
+  })
+
+  it('accepts immediate type-to-search', () => {
+    const { container } = renderUi(
+      <TitleModelField value={undefined} onChange={vi.fn()} />,
+    )
+    expectPickerAcceptsImmediateSearch(container)
+  })
+})
+
+describe('SynthesiserPicker', () => {
+  it('accepts immediate type-to-search', () => {
+    const { container } = renderUi(
+      <SynthesiserPicker
+        role="judge"
+        modelId="anthropic:claude-sonnet-5"
+        onChange={vi.fn()}
+        options={modelOptions()}
+      />,
+    )
+    expectPickerAcceptsImmediateSearch(container)
   })
 })

@@ -41,6 +41,29 @@ describe('registry', () => {
     ).toHaveLength(0)
   })
 
+  it('snapshots the full OpenRouter catalog, including native-vendor routes', () => {
+    const routed = registry.filter((m) => m.provider === 'openrouter')
+    expect(
+      routed.length,
+      'the OpenRouter snapshot regressed to a small curated allowlist',
+    ).toBeGreaterThan(100)
+    expect(
+      routed.some((m) => m.providerModelId.startsWith('anthropic/')),
+      'OpenRouter-hosted Anthropic models are missing',
+    ).toBe(true)
+    expect(
+      routed.some((m) => m.providerModelId.startsWith('openai/')),
+      'OpenRouter-hosted OpenAI models are missing',
+    ).toBe(true)
+  })
+
+  it('keeps the OpenRouter snapshot in deterministic code-point order', () => {
+    const keys = registry
+      .filter((m) => m.provider === 'openrouter')
+      .map((m) => `${m.label}\0${m.providerModelId}`)
+    expect(keys).toEqual([...keys].sort())
+  })
+
   it('deprecated models never carry curated designations', () => {
     // A superseded model must hand its roles to the successor: the preset
     // must not seat it, and the last-resort default must not point at it.

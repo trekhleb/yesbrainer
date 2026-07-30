@@ -13,7 +13,7 @@
  * sites can drop it straight into `getOptionLabel` / `getValueLabel`.
  */
 
-import type { Option, Value } from 'baseui/select'
+import { SIZE as SelectSize, type Option, type Value } from 'baseui/select'
 import { Link } from 'react-router-dom'
 import { ModelCapabilityIcons } from '@/components/model-capability-icons'
 import { ProviderLogo } from '@/components/provider-logo'
@@ -21,6 +21,7 @@ import type { useApiKeys } from '@/hooks/use-api-keys'
 import type { OllamaStatus } from '@/hooks/use-ollama-reachable'
 import { isProviderReachable } from '@/providers'
 import { getModel, registry, type ProviderId } from '@/models/registry'
+import { MODEL_PICKER_SELECT_OVERRIDES } from '@/utils/select-overrides'
 
 export interface ModelOption extends Option {
   id: string
@@ -136,6 +137,20 @@ export function renderModelOption({ option }: { option?: Option }) {
     </span>
   )
 }
+
+/**
+ * Interaction and rendering policy shared by every model Select. Keeping
+ * search here prevents one of the participant, synthesiser, or titler
+ * surfaces from silently falling back to a hundreds-row scroll-only menu.
+ */
+export const MODEL_PICKER_SELECT_PROPS = {
+  size: SelectSize.compact,
+  clearable: false,
+  searchable: true,
+  overrides: MODEL_PICKER_SELECT_OVERRIDES,
+  getOptionLabel: renderModelOption,
+  getValueLabel: renderModelOption,
+} as const
 
 /**
  * Resolve a `modelId` to the corresponding Base Web `Value` (a single-item

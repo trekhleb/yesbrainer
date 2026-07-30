@@ -7,14 +7,13 @@
 import type { ReactNode } from 'react'
 import { useStyletron } from 'baseui'
 import { FormControl } from 'baseui/form-control'
-import { Select, SIZE as SelectSize } from 'baseui/select'
+import { Select } from 'baseui/select'
 import { STRUCTURE_ICON } from '@/models/social-structures'
 import {
+  MODEL_PICKER_SELECT_PROPS,
   type ModelOption,
-  renderModelOption,
   selectValueForModelId,
 } from '@/components/model-options'
-import { MODEL_PICKER_SELECT_OVERRIDES } from '@/utils/select-overrides'
 
 const COPY: Record<'judge' | 'mediator', { label: string; caption: ReactNode }> =
   {
@@ -83,17 +82,12 @@ export function SynthesiserPicker({
       >
         <div className={css({ flex: 1, minWidth: 0 })}>
           <Select
+            {...MODEL_PICKER_SELECT_PROPS}
             options={options}
             value={selectValueForModelId(options, modelId)}
             onChange={({ option }) => {
               if (option && option.id) onChange(String(option.id))
             }}
-            size={SelectSize.compact}
-            clearable={false}
-            searchable={false}
-            overrides={MODEL_PICKER_SELECT_OVERRIDES}
-            getOptionLabel={renderModelOption}
-            getValueLabel={renderModelOption}
           />
         </div>
         {trailing}
