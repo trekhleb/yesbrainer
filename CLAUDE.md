@@ -10,6 +10,10 @@ The living design doc spans three files — read the relevant ones before any no
 - [`DEVELOPMENT.md`](./DEVELOPMENT.md) — how it's built: architecture, dev workflow, conventions, UX & design, code patterns. Follow its "Engineering principles" and "Security principles" for every change.
 - [`SECURITY.md`](./SECURITY.md) — What's stored, where, and who can see it; Defenses in the code; Threat model; What this does NOT protect against; Vulnerability reporting.
 
+## The app is live
+
+Real people already have councils stored in their browsers, and there is no backend holding a copy. Treat backward compatibility as a requirement of every change that touches a persisted shape, not a nice-to-have — the rules and the reasoning live in `DEVELOPMENT.md` → "Engineering principles".
+
 ## Update the docs as you work
 
 After any design decision or scope change: update the owning doc in the same change — decisions, patterns, and principles land in `DEVELOPMENT.md`; product-facing changes in `README.md`; security-related changes in `SECURITY.md`. One fact, one file — the others link to it, never restate it. Keep it compact — edit stale lines, do not append next to them. Capture *why*, not *what*.
@@ -21,6 +25,10 @@ Run `npm run typecheck` after any edit that touches TypeScript — the canonical
 `npm run lint` is the secondary check (eslint); run it before declaring a slice done. `npm run typecheck:coverage` enforces ≥ 99.7% strict type coverage (share of identifiers that aren't `any`) — run it whenever a change adds a cast or touches `any`; CI (`.github/workflows/ci.yml`) gates on all three.
 
 Unit and snapshot tests may take some time to execute, so launch them sparingly, i.e. after the big chunk of feature is done (not on every change). When a UI change shifts visual baselines, regenerate **only the shots your change actually touches** (scope the Playwright run) — never blanket `--update-snapshots`: dense-text shots drift by sub-1% antialiasing noise across machines, and a blanket update silently blesses unrelated regressions.
+
+## Code reviews
+
+For any review of a diff, branch, or PR — however the request is phrased — load the `review` skill (`.claude/skills/review/SKILL.md`) first: the project's review checklist and per-area doc-routing table, distilled from the three docs above. The docs stay canonical; the skill is the reviewer's lens over them.
 
 ## Copy rules (any user-facing text)
 
