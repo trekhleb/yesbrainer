@@ -17,7 +17,10 @@ import { Composer } from '@/components/composer'
 import { ComposerKeysGate } from '@/components/composer-keys-gate'
 import type { ComposerToolOption } from '@/components/composer/run-options'
 import { useApiKeys } from '@/hooks/use-api-keys'
+import { useBehaviorSettings } from '@/hooks/use-behavior-settings'
 import { useOllamaReachable } from '@/hooks/use-ollama-reachable'
+import { useWakeLock } from '@/hooks/use-wake-lock'
+import { DEFAULT_KEEP_AWAKE_DURING_RUN } from '@/storage/behavior'
 import { hasUsableModel } from '@/utils/usable-models'
 import {
   getAvailableToolNamesForEntry,
@@ -95,6 +98,8 @@ export function CouncilView({
     retrySeatAnswer,
     retryJudge,
     retryMediatorRound,
+    resumeTurn,
+    hasBackgroundRun,
     seatRetry,
     synthRetry,
   } = useCouncilSession(councilId, {
@@ -103,6 +108,14 @@ export function CouncilView({
     onTitleGenerationFinished,
     configRefreshKey,
   })
+
+  // Keep the screen awake for the length of a run, so the commonest cause of
+  // an interrupted council — a phone put down and auto-locked mid-debate —
+  // stops happening. Opt-out in Settings → Behavior; see `useWakeLock` for
+  // what it can and can't do.
+  const keepAwake =
+    useBehaviorSettings().keepAwakeDuringRun ?? DEFAULT_KEEP_AWAKE_DURING_RUN
+  useWakeLock(keepAwake && isStreaming)
 
   // Stabilise the one retry callback handed to *every* turn so `memo(TurnView)`
   // can skip settled turns while a new one streams below (`retryFailedVotes` is
@@ -229,6 +242,10 @@ export function CouncilView({
           synthRetry={synthRetry}
           onRetryJudge={(turnId) => void retryJudge(turnId)}
           onRetryMediatorRound={(turnId) => void retryMediatorRound(turnId)}
+          // `manual` — a user pressing Resume always gets an attempt, past
+          // the auto-resume cap that governs the retries they didn't ask for.
+          onResume={(turnId) => void resumeTurn(turnId, { manual: true })}
+          hasBackgroundRun={hasBackgroundRun}
           error={null}
           // Reserve the full overlay height so content rests *above* the
           // composer's gradient at rest — nothing sits under the fade (which

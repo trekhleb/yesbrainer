@@ -58,6 +58,11 @@ export interface ChatThreadProps {
   onRetryJudge: (turnId: string) => void
   /** Re-run the final errored Mediator round in a persisted Consensus turn. */
   onRetryMediatorRound: (turnId: string) => void
+  /** Pick an interrupted turn's run back up. */
+  onResume: (turnId: string) => void
+  /** A run for this council is in flight but owned by a previous mount of
+   *  this view — see `useCouncilSession`. */
+  hasBackgroundRun: boolean
   error: string | null
   /** Extra bottom padding (px) so the last message can scroll clear of the
    *  composer, which floats over the thread's lower edge (ChatGPT-style).
@@ -77,6 +82,8 @@ export function ChatThread({
   synthRetry,
   onRetryJudge,
   onRetryMediatorRound,
+  onResume,
+  hasBackgroundRun,
   error,
   bottomInset = 0,
 }: ChatThreadProps) {
@@ -93,14 +100,25 @@ export function ChatThread({
   // `openAnchorRef` marker rendered inside the last TurnView) — except demo
   // councils, which open at the *top*: a recording reads start-to-finish.
   // See `useChatAutoScroll`.
+  // A *resumed* turn is streaming but not new: it is already in the mirror
+  // (its earlier attempt checkpointed it), which is exactly what tells the
+  // two apart. Pinning is for a question the user just asked — doing it on
+  // a resume yanks them from the paused card they just clicked, up to a
+  // question that can be a whole debate away.
+  const isResumedTurn =
+    streamingTurn !== null &&
+    council.turns.some((t) => t.id === streamingTurn.id)
   const { scrollRef, anchorRef, spacerRef, openAnchorRef } = useChatAutoScroll(
-    streamingTurn?.id ?? null,
+    isResumedTurn ? null : (streamingTurn?.id ?? null),
     { openAtTop: council.isDemo === true },
   )
 
   return (
     <section
       ref={scrollRef}
+      // Named landmark: this is the page's scrollable log, and an unlabelled
+      // <section> is not exposed as a region at all.
+      aria-label="Council thread"
       className={css({
         flex: 1,
         minHeight: 0,
@@ -164,6 +182,12 @@ export function ChatThread({
             // votes / a verdict / debate rounds exist, a late answer would be
             // invisible to them, and later turns' seat histories may have
             // consumed this one — so the affordance disappears.
+            // A resumed turn is persisted *and* in flight at the same time
+            // — it was checkpointed by the attempt that got interrupted.
+            // The streaming view owns it for the duration (it is seeded
+            // with the persisted work, so nothing disappears), and skipping
+            // it here is what stops the turn rendering twice.
+            if (streamingTurn?.id === turn.id) return null
             const isLatestTurn = i === council.turns.length - 1
             const answersUnconsumed = turn.events.every(
               (e) => e.roleType === 'participant',
@@ -206,6 +230,10 @@ export function ChatThread({
                 {...(canRetrySynth
                   ? { onRetryJudge, onRetryMediatorRound }
                   : {})}
+                {...(isLatestTurn && actionsEnabled && !hasBackgroundRun
+                  ? { onResume }
+                  : {})}
+                hasBackgroundRun={hasBackgroundRun}
               />
             )
           })}
@@ -213,12 +241,16 @@ export function ChatThread({
             <>
               {/* Pin target: the top of the just-sent turn. `marginTop`
                   cancels the flex gap above it so the anchor doesn't add
-                  space. The auto-scroll hook scrolls this to the top. */}
-              <div
-                ref={anchorRef}
-                aria-hidden
-                className={css({ height: 0, marginTop: '-12px' })}
-              />
+                  space. The auto-scroll hook scrolls this to the top — and
+                  sizes its bottom reserve from it, so a resumed turn (which
+                  is never pinned) doesn't render one at all. */}
+              {isResumedTurn ? null : (
+                <div
+                  ref={anchorRef}
+                  aria-hidden
+                  className={css({ height: 0, marginTop: '-12px' })}
+                />
+              )}
               <StreamingTurnView
                 streamingTurn={streamingTurn}
                 votingTurn={votingTurn}

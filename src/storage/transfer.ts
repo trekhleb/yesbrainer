@@ -48,7 +48,16 @@ function toBundleCouncil(
   const seats = seatRowsToRoster(seatRows)
   // The bulk export reads turns unordered (grouped from a full-table
   // scan), so sort here; the mapper leaves ordering to its caller.
-  const turns = [...turnRows].sort((a, b) => a.idx - b.idx).map(turnRowToTurn)
+  // `runState` is deliberately stripped: it describes a run *this device*
+  // had in flight, and a bundle that carried it would land on the importing
+  // device as a turn offering to resume work that machine never started.
+  // The import schema drops it anyway (non-strict `turnSchema`), so leaving
+  // it in would also break the "exports always round-trip" contract —
+  // export → import → export wouldn't be stable.
+  const turns = [...turnRows]
+    .sort((a, b) => a.idx - b.idx)
+    .map(turnRowToTurn)
+    .map(({ runState: _unfinished, ...turn }) => turn)
   return {
     id: r.id,
     title: r.title,

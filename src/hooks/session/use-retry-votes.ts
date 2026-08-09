@@ -29,12 +29,19 @@ export function useRetryVotes({
   council,
   setCouncil,
   abortRef,
+  runStartingRef,
   isBusy,
   setVotingTurn,
 }: {
   council: Council | null
   setCouncil: React.Dispatch<React.SetStateAction<Council | null>>
   abortRef: React.MutableRefObject<AbortController | null>
+  /** Set, synchronously, while a resume is being started. `isBusy` can't
+   *  cover that window: it only flips once the run's first `setState`
+   *  commits, and auto-resume fires without a click — so a retry tapped in
+   *  between would become a second writer, and `appendTurn` replaces a
+   *  turn's events wholesale. Same ref shape as `abortRef` above. */
+  runStartingRef: React.MutableRefObject<string | null>
   /** True while any parent phase is in flight — a retry must not race them. */
   isBusy: boolean
   setVotingTurn: React.Dispatch<React.SetStateAction<VotingTurn | null>>
@@ -43,7 +50,7 @@ export function useRetryVotes({
 } {
   const retryFailedVotes = useCallback(
     async (turnId: string) => {
-      if (!council || isBusy) return
+      if (!council || isBusy || runStartingRef.current !== null) return
 
       const turn = council.turns.find((t) => t.id === turnId)
       if (!turn || !turn.votingLabels) return
@@ -102,7 +109,7 @@ export function useRetryVotes({
         () => setVotingTurn(null),
       )
     },
-    [council, setCouncil, abortRef, isBusy, setVotingTurn],
+    [council, setCouncil, abortRef, runStartingRef, isBusy, setVotingTurn],
   )
 
   return { retryFailedVotes }

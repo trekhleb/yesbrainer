@@ -1,5 +1,9 @@
 import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  getUnfinishedRunHints,
+  markRunUnfinished,
+} from '@/storage/unfinished-runs'
 import { useState } from 'react'
 import { analytics } from '@/analytics'
 import { useCouncilActions } from '@/hooks/use-council-actions'
@@ -87,6 +91,23 @@ describe('delete flow', () => {
     act(() => hook.result.current.cancelDelete())
     await act(() => hook.result.current.confirmDelete()) // no pending id — no-op
     expect(await getCouncil('c1')).not.toBeNull()
+  })
+
+  it('clears the deleted council’s unfinished-run hint — this is the one place that cleans up council-scoped device state on delete', async () => {
+    await createCouncil({
+      id: 'c1',
+      socialStructure: 'roundtable',
+      seats: [seat('s1')],
+    })
+    markRunUnfinished('c1', 't1')
+    markRunUnfinished('other', 't2')
+    const { hook } = harness(await listCouncils(), 'c1')
+
+    act(() => hook.result.current.requestDelete('c1'))
+    await act(() => hook.result.current.confirmDelete())
+
+    // Only the deleted council's pointer goes; the other is untouched.
+    expect(getUnfinishedRunHints()).toEqual({ other: 't2' })
   })
 })
 

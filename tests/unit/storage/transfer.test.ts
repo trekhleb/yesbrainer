@@ -152,3 +152,62 @@ describe('export filenames', () => {
     )
   })
 })
+
+describe('export — unfinished runs', () => {
+  it('strips run state, so a bundle never lands on another device offering to resume work that machine never started', async () => {
+    await createCouncil({
+      id: 'c1',
+      socialStructure: 'roundtable',
+      seats: [seat('s1')],
+    })
+    await appendTurn(
+      'c1',
+      turn({
+        id: 't1',
+        events: [participantEvent('s1')],
+        runState: {
+          status: 'interrupted',
+          phase: 'answers',
+          startedAt: 1,
+          heartbeatAt: 1,
+          activeSeatIds: ['s1'],
+        },
+      }),
+    )
+
+    const one = await exportOneCouncil('c1')
+    expect(one?.councils[0]?.turns[0]).not.toHaveProperty('runState')
+    const all = await exportAllCouncils()
+    expect(all.councils[0]?.turns[0]).not.toHaveProperty('runState')
+
+    // ...and the turn itself still round-trips intact.
+    expect(all.councils[0]?.turns[0]?.events).toHaveLength(1)
+  })
+
+  it('re-importing an export leaves the imported turn finished', async () => {
+    await createCouncil({
+      id: 'c1',
+      socialStructure: 'roundtable',
+      seats: [seat('s1')],
+    })
+    await appendTurn(
+      'c1',
+      turn({
+        id: 't1',
+        events: [participantEvent('s1')],
+        runState: {
+          status: 'running',
+          phase: 'answers',
+          startedAt: 1,
+          heartbeatAt: 1,
+          activeSeatIds: ['s1'],
+        },
+      }),
+    )
+    const bundle = await exportAllCouncils()
+    await clearDb()
+    await importCouncils(bundle)
+    const imported = await getCouncil('c1')
+    expect(imported?.turns[0]?.runState).toBeUndefined()
+  })
+})

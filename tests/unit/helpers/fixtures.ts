@@ -11,6 +11,7 @@ import type {
   Turn,
   TurnEvent,
 } from '@/types/council'
+import type { VisibilityWatch } from '@/utils/session/interruption'
 import type { NativeModelId } from '@/models/registry'
 import { EMPTY_TOKENS, summarizeEvents } from '@/utils/token-totals'
 
@@ -89,3 +90,17 @@ export function council(over: Partial<Council> = {}): Council {
     ...over,
   }
 }
+
+/**
+ * A `VisibilityWatch` that reports a page which never went hidden — the
+ * shape phase modules take so they can tell an interruption from a real
+ * provider failure. Tests that exercise the *interrupted* path pass
+ * `hiddenAt: 0` (any call started after epoch counts as backgrounded)
+ * instead of overriding the error strings.
+ */
+export function visibilityWatch(hiddenAt = 0): VisibilityWatch {
+  return { lastHiddenAt: () => hiddenAt, dispose: () => {} }
+}
+
+/** No-op checkpoint for phase-module tests that don't assert persistence. */
+export const noopCheckpoint = async () => {}

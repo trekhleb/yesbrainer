@@ -22,6 +22,8 @@ function mount(over: Partial<ChatThreadProps> = {}) {
     synthRetry: null,
     onRetryJudge: vi.fn(),
     onRetryMediatorRound: vi.fn(),
+  onResume: vi.fn(),
+  hasBackgroundRun: false,
     error: null,
     ...over,
   }

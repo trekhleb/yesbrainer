@@ -36,6 +36,7 @@ function mount(over: Partial<Parameters<typeof Row>[0]> = {}) {
       active={false}
       isGeneratingTitle={false}
       isStreaming={false}
+      isPaused={false}
       {...handlers}
       {...over}
     />,

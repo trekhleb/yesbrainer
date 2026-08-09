@@ -31,6 +31,7 @@ export function Row({
   active,
   isGeneratingTitle,
   isStreaming,
+  isPaused,
   onSelect,
   onSettings,
   onDelete,
@@ -45,6 +46,10 @@ export function Row({
    *  `isGeneratingTitle` it puts the ⋯ button into its loading state — the
    *  card's one busy indicator. */
   isStreaming: boolean
+  /** This council's latest run stopped before it finished. Renders a quiet
+   *  dot rather than the kebab's busy state — paused is a *waiting* state,
+   *  not a working one. */
+  isPaused: boolean
   onSelect: () => void
   onSettings: () => void
   onDelete: () => void
@@ -189,6 +194,25 @@ export function Row({
             <StructurePill
               structure={council.socialStructure}
               size="small"
+            />
+          )}
+          {isPaused && !busy && (
+            // A council whose run stopped before finishing. Quiet by design
+            // — a dot, in the neutral content colour, not a warning: nothing
+            // failed, and the row's job here is only to say "there's
+            // something waiting inside" so an interruption that happened
+            // while the user was on another council isn't silent. Suppressed
+            // while the row is busy: a run in flight is the newer truth.
+            <span
+              title="Paused — open to resume"
+              aria-label="Paused run"
+              className={css({
+                flexShrink: 0,
+                width: '6px',
+                height: '6px',
+                borderRadius: '999px',
+                backgroundColor: theme.colors.contentTertiary,
+              })}
             />
           )}
           <SeatLogos modelIds={council.modelIds} scroll />

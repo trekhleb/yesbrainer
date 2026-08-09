@@ -56,12 +56,19 @@ export function useRetrySynthesis({
   council,
   setCouncil,
   abortRef,
+  runStartingRef,
   isBusy,
   setSynthRetry,
 }: {
   council: Council | null
   setCouncil: React.Dispatch<React.SetStateAction<Council | null>>
   abortRef: React.MutableRefObject<AbortController | null>
+  /** Set, synchronously, while a resume is being started. `isBusy` can't
+   *  cover that window: it only flips once the run's first `setState`
+   *  commits, and auto-resume fires without a click — so a retry tapped in
+   *  between would become a second writer, and `appendTurn` replaces a
+   *  turn's events wholesale. Same ref shape as `abortRef` above. */
+  runStartingRef: React.MutableRefObject<string | null>
   /** True while any parent phase — including this retry's own overlay —
    *  is in flight; a retry must not race them. */
   isBusy: boolean
@@ -72,7 +79,7 @@ export function useRetrySynthesis({
 } {
   const retryJudge = useCallback(
     async (turnId: string) => {
-      if (!council || isBusy) return
+      if (!council || isBusy || runStartingRef.current !== null) return
       const turn = council.turns.find((t) => t.id === turnId)
       if (!turn) return
       const oldEvent = turn.events.find(
@@ -137,12 +144,12 @@ export function useRetrySynthesis({
         () => setSynthRetry(null),
       )
     },
-    [council, setCouncil, abortRef, isBusy, setSynthRetry],
+    [council, setCouncil, abortRef, runStartingRef, isBusy, setSynthRetry],
   )
 
   const retryMediatorRound = useCallback(
     async (turnId: string) => {
-      if (!council || isBusy) return
+      if (!council || isBusy || runStartingRef.current !== null) return
       const turn = council.turns.find((t) => t.id === turnId)
       if (!turn) return
       const mediator = council.mediator
@@ -256,7 +263,7 @@ export function useRetrySynthesis({
         () => setSynthRetry(null),
       )
     },
-    [council, setCouncil, abortRef, isBusy, setSynthRetry],
+    [council, setCouncil, abortRef, runStartingRef, isBusy, setSynthRetry],
   )
 
   return { retryJudge, retryMediatorRound }

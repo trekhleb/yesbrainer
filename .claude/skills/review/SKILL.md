@@ -16,6 +16,7 @@ State in one sentence what problem the change solves (from the request, issue, o
 - **Solves the actual problem** — the cause, not a symptom, with the original issue's own corner cases covered.
 - **Contains nothing that doesn't serve it** — no scope creep, drive-by refactors, or reformatting noise that buries the real change.
 - **Breaks nothing that works** — unless changing that behaviour *is* the point, existing flows and existing users' data must behave exactly as before.
+- **Reaches everything it must.** A change that introduces a cross-cutting rule — a new invariant, lifecycle, guard, or field — makes *untouched* code wrong by omission, and a diff cannot show you an absence. Ask outright: **what did this change not touch that now has to change?** Then grep for every other caller, writer and path the new rule claims to govern. This is the highest-yield question in the file; the omissions it finds are invisible to a line-by-line read.
 
 ## Step 1 — read the owning docs for what the diff touches
 

@@ -26,6 +26,27 @@ export function summarizeEvents(events: TurnEvent[]): TokenTotals {
   return out
 }
 
+/**
+ * Sum a council's turns into its running total.
+ *
+ * Used where a delta would be wrong: a turn can now be persisted several
+ * times over its life (checkpoints, then a resume that adds to it), and
+ * whether the in-memory council total already includes a given checkpoint
+ * depends on whether the page reloaded in between. Re-summing the turns is
+ * indifferent to all of that — the same reason `appendTurn` recomputes
+ * rather than accumulating.
+ */
+export function summarizeTurns(
+  turns: readonly { tokenTotal: TokenTotals }[],
+): TokenTotals {
+  const out: TokenTotals = { ...EMPTY_TOKENS }
+  for (const t of turns) {
+    out.inputTokens += t.tokenTotal.inputTokens
+    out.outputTokens += t.tokenTotal.outputTokens
+  }
+  return out
+}
+
 export function addTokens(a: TokenTotals, b: TokenTotals): TokenTotals {
   return {
     inputTokens: a.inputTokens + b.inputTokens,

@@ -19,6 +19,7 @@ import {
 } from '@/storage/councils'
 import { logRedactedError } from '@/utils/extract-error'
 import { abortCouncilStreams } from '@/utils/session/active-streams'
+import { clearRunUnfinished } from '@/storage/unfinished-runs'
 import { latestShareableTurn } from '@/utils/shareability'
 
 export type SharePayload = Omit<ShareVerdictModalProps, 'onClose'>
@@ -78,6 +79,10 @@ export function useCouncilActions(args: {
     // is about to drop, so letting them finish just burns the user's
     // provider tokens.
     abortCouncilStreams(id)
+    // …and drop the unfinished-run hint pointing at it. Harmless if missed
+    // (it would resolve to no row, so no sidebar dot), but this is already
+    // the one place that cleans up council-scoped device state on delete.
+    clearRunUnfinished(id)
     analytics.event('council-deleted')
     setCouncils((cs) => cs.filter((c) => c.id !== id))
     // Clear the route when the active council is the one being deleted —

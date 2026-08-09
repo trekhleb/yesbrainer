@@ -22,6 +22,13 @@ export function isTurnShareable(
   turn: Turn,
   structure: SocialStructure,
 ): boolean {
+  // An unfinished run has no *result* to share, whatever it has produced
+  // so far. A debate stopped at round 1 of 3 holds a real synthesis, but
+  // sharing it as the council's conclusion would misrepresent an
+  // interruption as an outcome — and the share card carries no way to say
+  // "this one didn't finish". Centralised here so the sidebar action, the
+  // in-chat triggers and the card builder all refuse it together.
+  if (turn.runState) return false
   switch (structure) {
     // Parallel-shaped turns share the answer fan-out itself — their
     // result IS the divergence panorama. `custom` runs the plain parallel

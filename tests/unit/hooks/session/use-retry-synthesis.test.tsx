@@ -33,6 +33,7 @@ function harness(initial: Council) {
       council,
       setCouncil,
       abortRef,
+      runStartingRef: { current: null },
       isBusy: false,
       setSynthRetry,
     })

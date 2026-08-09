@@ -22,6 +22,7 @@ import type {
   SocialStructure,
   TokenTotals,
   TurnEvent,
+  TurnRunState,
 } from '@/types/council'
 
 export interface CouncilRow {
@@ -61,6 +62,17 @@ export interface TurnRow {
   tokenTotal: TokenTotals
   votingLabels?: Record<string, string>
   userImages?: string[]
+  /** Present only while the run that produces this turn is unfinished (see
+   *  `TurnRunState`). **Not indexed — no schema version bump**, same rule as
+   *  `pos` / `isDemo` / `deliberation`. A version bump would be the one
+   *  genuinely dangerous change here: a tab still running a previously-cached
+   *  bundle declares `version(1)` and IndexedDB rejects the open outright
+   *  (`VersionError`), so a mid-update reload could leave a user staring at a
+   *  storage failure. Finding unfinished runs across *other* councils is
+   *  instead served by a lossy localStorage hint index
+   *  (`storage/unfinished-runs.ts`) — the open council always reads its own
+   *  turns anyway, so the hint's worst failure is a missing sidebar dot. */
+  runState?: TurnRunState
 }
 
 class CouncilDb extends Dexie {

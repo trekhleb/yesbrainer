@@ -60,6 +60,10 @@ export interface CouncilSidebarProps {
    *  `useStreamingCouncilIds` — includes runs finishing in the background).
    *  Either set puts the row's ⋯ button into its loading state. */
   streamingCouncilIds: ReadonlySet<string>
+  /** Councils whose latest run stopped before finishing — the row wears a
+   *  quiet paused dot so an interruption that happened while the user was
+   *  elsewhere doesn't just read as "finished". */
+  pausedCouncilIds: ReadonlySet<string>
   /** Closes the sidebar — the Drawer backdrop / ESC on mobile, and the
    *  in-drawer close X. */
   onRequestClose: () => void
@@ -223,6 +227,7 @@ function SidebarBody({
   onShareResult,
   generatingTitleIds,
   streamingCouncilIds,
+  pausedCouncilIds,
   onRequestClose,
   onToggleSidebar,
   onOpenSettings,
@@ -458,6 +463,7 @@ function SidebarBody({
                 active={c.id === activeId}
                 isGeneratingTitle={generatingTitleIds.has(c.id)}
                 isStreaming={streamingCouncilIds.has(c.id)}
+                isPaused={pausedCouncilIds.has(c.id)}
                 onSelect={onSelect}
                 onShareResult={() => onShareResult(c.id)}
                 onSettings={() => onOpenCouncilSettings(c.id)}

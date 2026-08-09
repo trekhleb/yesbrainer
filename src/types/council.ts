@@ -7,6 +7,7 @@
  */
 
 import type { DimensionConfig } from '@/storage/behavior'
+import type { InterruptionCause } from '@/utils/session/interruption'
 
 export const SOCIAL_STRUCTURE_VALUES = [
   'roundtable',
@@ -282,11 +283,126 @@ interface MovementEntry {
   note: string
 }
 
+/**
+ * Lifecycle of the run that produces a turn.
+ *
+ * A council run is a chain of live provider streams that can last minutes.
+ * The browser can take that chain away at any moment — iOS suspends the
+ * whole process on lock, desktop discards backgrounded tabs — and a run
+ * whose progress lived only in React state died with it, surfacing as a
+ * wall of provider errors (or silently missing work) on return.
+ *
+ * So the turn row carries the run's own state, and every completed unit of
+ * work is checkpointed into `events` as it lands. Presence of `runState`
+ * means exactly one thing: **this turn has not finished**. The orchestrator
+ * deletes it on completion (and on an explicit Stop), which keeps the
+ * `runState.status` index sparse and makes "what needs recovering?" a
+ * single indexed read.
+ *
+ * The fields beyond `status` exist so a *different page load* can rebuild
+ * the run's inputs — the original closure is gone, so anything the resume
+ * can't re-derive from the council or the turn has to be written down.
+ */
+export const RUN_STATUS_VALUES = ['running', 'interrupted'] as const
+
+export type RunStatus = (typeof RUN_STATUS_VALUES)[number]
+
+/** Which stage of the pipeline the run was in — drives the resume copy
+ *  ("paused while the mediator was deliberating"), not the resume logic
+ *  itself. What actually gets re-run is derived from the persisted events
+ *  (`utils/session/remaining-work.ts`), which can't drift from reality the
+ *  way a written-down phase marker can. */
+export const RUN_PHASE_VALUES = [
+  'answers',
+  'voting',
+  'judging',
+  'mediating',
+  'reanswering',
+] as const
+
+export type RunPhase = (typeof RUN_PHASE_VALUES)[number]
+
+export interface TurnRunState {
+  status: RunStatus
+  phase: RunPhase
+  /** Consensus debate round in flight (1-indexed). */
+  round?: number
+  maxRounds?: number
+  startedAt: number
+  /** Bumped periodically while a run is driving this turn. Informational
+   *  only — "paused 4 minutes ago" copy. Liveness itself is decided by run
+   *  ownership (`utils/session/run-lock.ts`), because a hidden tab's timers
+   *  are throttled to ~1/min and a stale heartbeat would libel a perfectly
+   *  healthy background run. */
+  heartbeatAt: number
+  /** The seats this turn fanned out to. Not derivable after the fact: the
+   *  roster is editable, and an image-bearing turn skips non-vision seats,
+   *  so "who was supposed to answer" is a property of the run, not of the
+   *  council as it stands now. */
+  activeSeatIds: string[]
+  /** Composer run options captured at send. Sticky in localStorage today,
+   *  but a resume must reproduce the run the user *started*, not the one
+   *  their current settings would produce. */
+  mutedTools?: string[]
+  reasoningEffort?: ReasoningEffort
+  /** Auto-resume attempts already spent on this turn. Capped so an unlock
+   *  with no connectivity retries a couple of times and then waits for the
+   *  user instead of burning tokens in a loop. */
+  resumeAttempts?: number
+  /** Why the run stopped, when the page lived long enough to notice. Absent
+   *  after a hard kill — nothing ran to write it — which is why the UI
+   *  treats backgrounding as the default explanation rather than claiming
+   *  a cause it can't know. */
+  cause?: InterruptionCause
+}
+
+/**
+ * Read-boundary normalization for `runState` — same contract as
+ * `normalizeSocialStructure` / `normalizeSeatConfig`: Dexie rows are
+ * written by whatever build was running at the time and are never
+ * re-validated on read.
+ *
+ * An unrecognised status or phase degrades to **no run state at all**, i.e.
+ * "this turn is finished". That direction is deliberate: the failure mode of
+ * guessing "unfinished" is an app that spends the user's BYOK tokens
+ * re-running work it doesn't understand, which is strictly worse than an
+ * old turn that simply never offers to resume.
+ */
+export function normalizeRunState(
+  runState: TurnRunState | undefined,
+): TurnRunState | undefined {
+  if (!runState) return undefined
+  const statusOk = (RUN_STATUS_VALUES as readonly unknown[]).includes(
+    runState.status,
+  )
+  const phaseOk = (RUN_PHASE_VALUES as readonly unknown[]).includes(
+    runState.phase,
+  )
+  if (!statusOk || !phaseOk) return undefined
+  if (!Array.isArray(runState.activeSeatIds)) return undefined
+  // Same hazard `normalizeSeatConfig` exists for, reached by a different
+  // road: on a resume this effort becomes the run-wide override and lands in
+  // `THINKING_BUDGET_TOKENS[effort]`, so a value from a build that spelled
+  // the rungs differently would request a thinking budget of `undefined`.
+  if (
+    runState.reasoningEffort !== undefined &&
+    !(REASONING_EFFORT_VALUES as readonly unknown[]).includes(
+      runState.reasoningEffort,
+    )
+  ) {
+    const { reasoningEffort: _stale, ...rest } = runState
+    return rest
+  }
+  return runState
+}
+
 export interface Turn {
   id: string
   idx: number
   userMsg: string
   events: TurnEvent[]
+  /** Present only while the turn is unfinished — see `TurnRunState`. */
+  runState?: TurnRunState
   /** Aggregated token usage for this turn's events — summed from each
    *  event's provider-reported `tokens`. */
   tokenTotal: TokenTotals

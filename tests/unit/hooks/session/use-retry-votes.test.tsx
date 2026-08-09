@@ -26,8 +26,11 @@ function voteEvent(voterId: string, over: Partial<TurnEvent> = {}): TurnEvent {
   }
 }
 
-function harness(initial: Council) {
+function harness(initial: Council, runStarting: string | null = null) {
   const abortRef: MutableRefObject<AbortController | null> = { current: null }
+  const runStartingRef: MutableRefObject<string | null> = {
+    current: runStarting,
+  }
   return renderHook(() => {
     const [council, setCouncil] = useState<Council | null>(initial)
     const [, setVotingTurn] = useState<VotingTurn | null>(null)
@@ -35,6 +38,7 @@ function harness(initial: Council) {
       council,
       setCouncil,
       abortRef,
+      runStartingRef,
       isBusy: false,
       setVotingTurn,
     })
@@ -123,6 +127,22 @@ describe('useRetryVotes', () => {
       }),
     )
     const hook = harness((await getCouncil('c2'))!)
+    await act(() => hook.result.current.retryFailedVotes('t1'))
+    expect(votingMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('useRetryVotes — the run-starting guard', () => {
+  it('stands down while a resume is being started, even though isBusy is still false', async () => {
+    /**
+     * `isBusy` only flips once the resume's first `setState` commits, and
+     * auto-resume fires without a click — so a retry tapped in that window
+     * would become a second writer against the same turn, and `appendTurn`
+     * replaces a turn's events wholesale. The synchronous ref is what
+     * actually closes it.
+     */
+    const council = await seed()
+    const hook = harness(council, 'some-turn-being-resumed')
     await act(() => hook.result.current.retryFailedVotes('t1'))
     expect(votingMock).not.toHaveBeenCalled()
   })

@@ -25,6 +25,7 @@ function harness(initial: Council) {
         council,
         setCouncil,
         abortRef,
+        runStartingRef: { current: null },
         isBusy,
         setSeatRetry,
       })
@@ -98,6 +99,7 @@ describe('useRetrySeat', () => {
         council,
         setCouncil,
         abortRef: { current: null },
+        runStartingRef: { current: null },
         isBusy: true,
         setSeatRetry,
       })

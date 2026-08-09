@@ -25,20 +25,36 @@
 
 const inFlight = new Map<string, Set<AbortController>>()
 
-const listeners = new Set<() => void>()
-/** Frozen key-set snapshot; a new instance only when the *set of busy
- *  councils* changes (`useSyncExternalStore` compares by identity, and a
- *  second controller joining a council's set changes nothing observable). */
-let streamingIds: ReadonlySet<string> = new Set()
+/**
+ * Runs that are driving a specific *turn*, counted by turn id.
+ *
+ * The council-level view above can't answer "is this turn being worked on?"
+ * — it also counts the fire-and-forget titler, so a council whose title is
+ * still generating reads as busy. That imprecision matters for the paused
+ * card: it would announce "picking up where it stopped" over a turn nobody
+ * is resuming, and hide a Resume button that would have worked.
+ */
+const inFlightTurns = new Map<string, number>()
 
-function notifyIfCouncilsChanged(): void {
-  if (
-    streamingIds.size === inFlight.size &&
-    [...inFlight.keys()].every((id) => streamingIds.has(id))
-  ) {
-    return
-  }
-  streamingIds = new Set(inFlight.keys())
+const listeners = new Set<() => void>()
+/** Frozen key-set snapshots; a new instance only when the *set* changes
+ *  (`useSyncExternalStore` compares by identity, and a second controller
+ *  joining a council's set changes nothing observable). */
+let streamingIds: ReadonlySet<string> = new Set()
+let streamingTurnIds: ReadonlySet<string> = new Set()
+
+function sameKeys(snapshot: ReadonlySet<string>, live: Map<string, unknown>) {
+  return (
+    snapshot.size === live.size && [...live.keys()].every((k) => snapshot.has(k))
+  )
+}
+
+function notifyIfChanged(): void {
+  const councilsSame = sameKeys(streamingIds, inFlight)
+  const turnsSame = sameKeys(streamingTurnIds, inFlightTurns)
+  if (councilsSame && turnsSame) return
+  if (!councilsSame) streamingIds = new Set(inFlight.keys())
+  if (!turnsSame) streamingTurnIds = new Set(inFlightTurns.keys())
   for (const listener of listeners) listener()
 }
 
@@ -53,27 +69,45 @@ export function getStreamingCouncilIds(): ReadonlySet<string> {
   return streamingIds
 }
 
+/** Ids of turns a run is currently driving — the precise question the
+ *  paused card asks. Excludes the titler, which belongs to no turn. */
+export function getStreamingTurnIds(): ReadonlySet<string> {
+  return streamingTurnIds
+}
+
 /** Track a controller for the duration of a run. Every registration must
  *  be paired with a `releaseCouncilStream` in the run's `finally`. */
 export function registerCouncilStream(
   councilId: string,
   controller: AbortController,
+  /** The turn this run is producing, when it has one. Counted rather than
+   *  set-of-controllers because a resume and its predecessor can briefly
+   *  overlap on the same turn id. */
+  turnId?: string,
 ): void {
   const set = inFlight.get(councilId) ?? new Set()
   set.add(controller)
   inFlight.set(councilId, set)
-  notifyIfCouncilsChanged()
+  if (turnId) inFlightTurns.set(turnId, (inFlightTurns.get(turnId) ?? 0) + 1)
+  notifyIfChanged()
 }
 
 export function releaseCouncilStream(
   councilId: string,
   controller: AbortController,
+  turnId?: string,
 ): void {
   const set = inFlight.get(councilId)
-  if (!set) return
-  set.delete(controller)
-  if (set.size === 0) inFlight.delete(councilId)
-  notifyIfCouncilsChanged()
+  if (set) {
+    set.delete(controller)
+    if (set.size === 0) inFlight.delete(councilId)
+  }
+  if (turnId) {
+    const next = (inFlightTurns.get(turnId) ?? 0) - 1
+    if (next > 0) inFlightTurns.set(turnId, next)
+    else inFlightTurns.delete(turnId)
+  }
+  notifyIfChanged()
 }
 
 /** Abort every in-flight run for the council. Called by the delete flow. */

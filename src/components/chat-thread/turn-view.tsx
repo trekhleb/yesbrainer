@@ -23,6 +23,7 @@ import { Fragment, memo, useState } from 'react'
 import { JudgeBlock } from '@/components/judge-block'
 import { ConsensusTurn } from '@/components/chat-thread/consensus-turn'
 import { OpenAnchor } from '@/components/chat-thread/open-anchor'
+import { PausedNotice } from '@/components/chat-thread/paused-notice'
 import { RoundtableGroup } from '@/components/roundtable-group'
 import { ShareVerdictModal } from '@/components/share-verdict-modal'
 import { UserBubble } from '@/components/user-bubble'
@@ -68,6 +69,13 @@ export interface TurnViewProps {
   /** Re-run an errored Judge verdict. Supplied on the latest turn only;
    *  undefined hides the button. */
   onRetryJudge?: (turnId: string) => void
+  /** Pick this turn's interrupted run back up. Supplied only where a resume
+   *  is possible (latest turn, nothing in flight); undefined hides the
+   *  button but the paused card still explains the state. */
+  onResume?: (turnId: string) => void
+  /** A run for this council is already in flight from a previous mount —
+   *  the card reports that rather than offering a dead Resume. */
+  hasBackgroundRun?: boolean
   /** Re-run the final errored Mediator round. Supplied on the latest turn
    *  only; undefined hides the button. */
   onRetryMediatorRound?: (turnId: string) => void
@@ -103,9 +111,21 @@ export const TurnView = memo(function TurnView({
   synthRetryOverlay,
   onRetryJudge,
   onRetryMediatorRound,
+  onResume,
+  hasBackgroundRun = false,
   isLatestTurn = false,
   openAnchorRef,
 }: TurnViewProps) {
+  // An unfinished run is a property of the turn, so its card renders in
+  // both shapes below rather than being duplicated into each.
+  const pausedNotice = turn.runState ? (
+    <PausedNotice
+      runState={turn.runState}
+      {...(turn.runState.cause ? { cause: turn.runState.cause } : {})}
+      {...(onResume ? { onResume: () => onResume(turn.id) } : {})}
+      resuming={hasBackgroundRun}
+    />
+  ) : null
   // Share-the-result modal — one per turn, opened
   // from the Judge verdict / final Mediator round header. Persisted turns
   // only (the streaming twin never offers it — nothing final to share).
@@ -212,15 +232,29 @@ export const TurnView = memo(function TurnView({
       councilMediatorModelId ??
       rounds.find((r) => r.mediator)?.mediator?.modelId ??
       ''
-    const maxRounds = Math.max(1, ...rounds.map((r) => r.round))
+    // An interrupted debate knows its own cap from the run that was cut
+    // off; without it, "of N" would be derived from the rounds that *did*
+    // land and a debate paused at round 1 of 3 would announce itself as
+    // "Round #1 of 1" — i.e. as finished. Same reason `isTurnShareable`
+    // refuses an unfinished turn: a stopped debate is not a verdict.
+    const maxRounds = Math.max(
+      1,
+      turn.runState?.maxRounds ?? 1,
+      ...rounds.map((r) => r.round),
+    )
     // Share rides the *final finished* round (same "only the last round"
     // rule as retry) — computed on the post-overlay rounds so a round
     // currently being re-run doesn't offer it.
+    // …and never on an unfinished turn: the "final" round of a debate that
+    // was interrupted is only the last one that happened to land.
+    // `isTurnShareable` owns that rule for every other surface.
     let shareRound = -1
-    for (const r of rounds) {
-      const m = r.mediator
-      if (m && m.status === 'done' && m.synthesis.length > 0) {
-        shareRound = Math.max(shareRound, m.round)
+    if (isTurnShareable(turn, socialStructure)) {
+      for (const r of rounds) {
+        const m = r.mediator
+        if (m && m.status === 'done' && m.synthesis.length > 0) {
+          shareRound = Math.max(shareRound, m.round)
+        }
       }
     }
     const roundsWithShare =
@@ -246,8 +280,10 @@ export const TurnView = memo(function TurnView({
           rounds={roundsWithShare}
           mediatorModelId={mediatorModelId}
           maxRounds={maxRounds}
+          isUnfinished={turn.runState !== undefined}
           openAnchorRef={openAnchorRef}
         />
+        {pausedNotice}
         {shareModal}
       </Fragment>
     )
@@ -326,6 +362,7 @@ export const TurnView = memo(function TurnView({
             : {})}
         />
       ) : null}
+      {pausedNotice}
       {shareModal}
     </Fragment>
   )

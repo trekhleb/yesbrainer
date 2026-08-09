@@ -22,6 +22,7 @@ export function ConsensusTurn({
   rounds,
   mediatorModelId,
   maxRounds,
+  isUnfinished = false,
   openAnchorRef,
 }: {
   rounds: ConsensusRoundView[]
@@ -29,15 +30,21 @@ export function ConsensusTurn({
   mediatorModelId: string
   /** Configured round cap — rendered as "Round X of N" on each card. */
   maxRounds: number
+  /** The run that produced this turn never finished (it was interrupted).
+   *  Suppresses the "Final" badge: the last round that happened to land is
+   *  not the debate's conclusion, and badging it as one would present an
+   *  interruption as an outcome. */
+  isUnfinished?: boolean
   /** Open-landing marker (latest turn only) — placed at the start of the
    *  last round's Mediator block (the deliberation's result), or of its
    *  answer lanes when the Mediator never ran. See `OpenAnchor`. */
   openAnchorRef?: React.RefObject<HTMLDivElement | null>
 }) {
   // The final round is the latest whose Mediator produced synthesis text —
-  // that's the council's answer. -1 when none did (don't badge an error).
+  // that's the council's answer. -1 when none did (don't badge an error),
+  // and -1 throughout while the debate is merely paused part-way.
   let finalRound = -1
-  for (let i = rounds.length - 1; i >= 0; i--) {
+  for (let i = rounds.length - 1; !isUnfinished && i >= 0; i--) {
     const m = rounds[i]?.mediator
     if (m && m.status !== 'error' && m.synthesis.length > 0) {
       finalRound = m.round

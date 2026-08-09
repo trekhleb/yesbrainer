@@ -23,6 +23,7 @@ import {
   summarizeEvents,
 } from '@/utils/token-totals'
 import {
+  normalizeRunState,
   normalizeSeatConfig,
   normalizeSocialStructure,
   normalizeSynthesiser,
@@ -38,6 +39,7 @@ import type {
   TokenTotals,
   Turn,
   TurnEvent,
+  TurnRunState,
 } from '@/types/council'
 
 export interface CouncilSummary {
@@ -100,6 +102,12 @@ export function seatRowsToRoster(seatRows: SeatRow[]): Seat[] {
 /** Turn row → domain turn. Shared with the export path (same drift
  *  argument as `seatRowsToRoster`); ordering is the caller's job. */
 export function turnRowToTurn(t: TurnRow): Turn {
+  // Read-boundary normalization, same contract as `normalizeSeatConfig`
+  // above: an unrecognised run state degrades to "finished" rather than
+  // offering to re-run work the build doesn't understand. Rows written
+  // before run state existed simply have none — they read as finished,
+  // which is exactly what they are.
+  const runState = normalizeRunState(t.runState)
   return {
     id: t.id,
     idx: t.idx,
@@ -108,6 +116,7 @@ export function turnRowToTurn(t: TurnRow): Turn {
     tokenTotal: t.tokenTotal,
     ...(t.votingLabels ? { votingLabels: t.votingLabels } : {}),
     ...(t.userImages ? { userImages: t.userImages } : {}),
+    ...(runState ? { runState } : {}),
   }
 }
 
@@ -288,6 +297,11 @@ export async function appendTurn(
       if (turn.votingLabels) {
         await db.turns.update(turn.id, { votingLabels: turn.votingLabels })
       }
+      // `turn.runState` is authoritative on every write, including its
+      // absence: Dexie deletes a key set to `undefined`, so the final
+      // persist — which carries no run state — is what marks the turn
+      // finished. One rule, no separate "clear" call to forget.
+      await db.turns.update(turn.id, { runState: turn.runState })
       return
     }
 
@@ -320,12 +334,128 @@ export async function appendTurn(
       tokenTotal,
       ...(turn.votingLabels ? { votingLabels: turn.votingLabels } : {}),
       ...(turn.userImages ? { userImages: turn.userImages } : {}),
+      ...(turn.runState ? { runState: turn.runState } : {}),
     })
     await db.councils.update(councilId, {
       tokenTotal: nextCouncilTotal,
       ...(nextTitle ? { title: nextTitle } : {}),
     })
   })
+}
+
+/**
+ * Merge a patch into an unfinished turn's `runState` without touching its
+ * events or token totals.
+ *
+ * Separate from `appendTurn` because its callers are the cheap, frequent
+ * ones — the heartbeat, and the flips to `interrupted` / spent resume
+ * attempts — none of which have new events to persist and none of which
+ * should pay for a token re-aggregation.
+ *
+ * **Never throws.** A heartbeat that rejects (row deleted mid-run, storage
+ * evicted, private-mode quota) must not take down the run it is merely
+ * annotating; a missing row simply means there is nothing left to annotate.
+ */
+export async function patchRunState(
+  councilId: string,
+  turnId: string,
+  patch: Partial<TurnRunState>,
+): Promise<void> {
+  try {
+    await db.transaction('rw', db.turns, async () => {
+      const row = await db.turns.get(turnId)
+      if (!row || row.councilId !== councilId || !row.runState) return
+      await db.turns.update(turnId, {
+        runState: { ...row.runState, ...patch },
+      })
+    })
+  } catch (err) {
+    console.warn('patchRunState skipped', err)
+  }
+}
+
+/**
+ * Mark an unfinished turn finished by dropping its `runState`.
+ *
+ * Distinct from `patchRunState`, which merges and therefore can't express
+ * removal. Used where a turn stops being resumable without new events to
+ * write: a newer send supersedes it, or its seats no longer exist.
+ */
+export async function clearRunState(
+  councilId: string,
+  turnId: string,
+): Promise<void> {
+  const row = await db.turns.get(turnId)
+  if (!row || row.councilId !== councilId) return
+  // Dexie deletes a key whose value is `undefined`.
+  await db.turns.update(turnId, { runState: undefined })
+}
+
+/**
+ * Drop a turn and give the council back its tokens.
+ *
+ * The one caller is the orchestrator retiring a placeholder row that never
+ * produced anything (a run stopped before its first event). Deleting a turn
+ * with events would silently destroy the user's only copy of them, so the
+ * token bookkeeping here is written to be correct rather than assumed
+ * trivial.
+ */
+export async function deleteTurn(
+  councilId: string,
+  turnId: string,
+): Promise<void> {
+  await db.transaction('rw', db.councils, db.turns, async () => {
+    const owner = await db.councils.get(councilId)
+    const row = await db.turns.get(turnId)
+    if (!owner || !row || row.councilId !== councilId) return
+    await db.turns.delete(turnId)
+    await db.councils.update(councilId, {
+      tokenTotal: subtractTokens(owner.tokenTotal, row.tokenTotal),
+    })
+  })
+}
+
+/**
+ * One turn, read fresh from storage.
+ *
+ * Exists because the in-memory council mirror is **advisory, not
+ * authoritative**: a run started before the user navigated away writes
+ * through the setter of a mount that no longer exists, so a later mount can
+ * hold a turn it believes is unfinished long after the row says otherwise.
+ * Anything about to *re-issue work* has to check the row.
+ */
+export async function getTurn(
+  councilId: string,
+  turnId: string,
+): Promise<Turn | null> {
+  const row = await db.turns.get(turnId)
+  if (!row || row.councilId !== councilId) return null
+  return turnRowToTurn(row)
+}
+
+/**
+ * Every turn whose run never finished — the recovery worklist.
+ *
+ * Reads by primary key from the caller's hint set rather than scanning
+ * `turns`: turn rows carry inline base64 images, so a full-table scan on
+ * every app start is exactly the cost we can't pay. The hint set is allowed
+ * to be lossy (see `storage/unfinished-runs.ts`); rows it misses are still
+ * found the moment their council is opened, because `getCouncil` reads that
+ * council's turns anyway.
+ */
+export async function getUnfinishedTurns(
+  turnIds: readonly string[],
+): Promise<Array<{ councilId: string; turn: Turn }>> {
+  if (turnIds.length === 0) return []
+  const rows = await db.turns.bulkGet([...turnIds])
+  const out: Array<{ councilId: string; turn: Turn }> = []
+  for (const row of rows) {
+    if (!row) continue
+    const turn = turnRowToTurn(row)
+    if (!turn.runState) continue
+    out.push({ councilId: row.councilId, turn })
+  }
+  return out
 }
 
 function truncateForTitle(s: string, max = 60): string {

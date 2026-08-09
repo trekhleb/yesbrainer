@@ -35,6 +35,7 @@ import { useNewCouncilDeepLink } from '@/hooks/use-new-council-deep-link'
 import { useOllamaReachable } from '@/hooks/use-ollama-reachable'
 import { useSidebarCollapse } from '@/hooks/use-sidebar-collapse'
 import { useStreamingCouncilIds } from '@/hooks/use-streaming-council-ids'
+import { usePausedCouncilIds } from '@/hooks/use-paused-council-ids'
 import { useTitleGenTracker } from '@/hooks/use-title-gen-tracker'
 import { useTrackDemoOpened } from '@/hooks/use-track-demo-opened'
 import { ensurePersistedStorage } from '@/storage/persist'
@@ -134,6 +135,9 @@ function CouncilApp() {
   // active-streams registry (covers runs that outlive their council view);
   // the busy row's ⋯ button wears the loading state.
   const streamingCouncilIds = useStreamingCouncilIds()
+  // Councils with an unfinished run — the counterpart signal, so a council
+  // interrupted in the background is visibly waiting rather than silent.
+  const pausedCouncilIds = usePausedCouncilIds()
 
   const refreshList = useCallback(async () => {
     const list = await listCouncils()
@@ -310,6 +314,7 @@ function CouncilApp() {
           onShareResult={(id) => void shareCouncil(id)}
           generatingTitleIds={generatingTitleIds}
           streamingCouncilIds={streamingCouncilIds}
+          pausedCouncilIds={pausedCouncilIds}
           onRequestClose={closeSidebar}
           onToggleSidebar={toggleSidebar}
           onOpenSettings={() => void routerNavigate('/settings')}

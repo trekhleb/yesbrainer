@@ -101,10 +101,48 @@ function isHttpError(value: unknown): value is MockHttpError {
   )
 }
 
+/**
+ * Kill the connection instead of answering — what a suspended phone or a
+ * dropped network actually does to an in-flight provider call.
+ *
+ * Distinct from `httpError` in the one way that matters here: an HTTP
+ * status means the provider *answered*, so the app records a failure the
+ * user should see, whereas an aborted transport means the call never got
+ * an answer at all and the app treats it as an interruption to be resumed.
+ * Routing it through `route.abort` keeps that difference real — the page
+ * sees a genuine network-level `TypeError` from its own `fetch`, exactly
+ * as it would on a locked phone.
+ */
+export interface MockDroppedConnection {
+  readonly kind: 'dropped-connection'
+}
+
+export function dropConnection(): MockDroppedConnection {
+  return { kind: 'dropped-connection' }
+}
+
+function isDroppedConnection(
+  value: unknown,
+): value is MockDroppedConnection {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    (value as { kind?: unknown }).kind === 'dropped-connection'
+  )
+}
+
 /** Streamed roles answer with text; structured roles answer with an
  *  object. Either may bail out with an `httpError(...)`. */
-type TextHandler = (call: RecordedCall) => string | MockHttpError
-type ObjectHandler = (call: RecordedCall) => unknown
+/** Handlers may return a promise, so a spec can hold a call open and
+ *  observe the app while a run is genuinely in flight. */
+type TextHandler = (
+  call: RecordedCall,
+) =>
+  | string
+  | MockHttpError
+  | MockDroppedConnection
+  | Promise<string | MockHttpError | MockDroppedConnection>
+type ObjectHandler = (call: RecordedCall) => unknown | Promise<unknown>
 
 export interface MockScript {
   participant?: TextHandler
@@ -351,7 +389,12 @@ export async function installAnthropicMock(
       kind === 'participant' || kind === 'reanswer' || kind === 'judge'
     const handler = script[kind]
     if (!handler) missingHandler(kind, model)
-    const reply = handler(call)
+    const reply = await handler(call)
+
+    if (isDroppedConnection(reply)) {
+      await route.abort('connectionfailed')
+      return
+    }
 
     if (isHttpError(reply)) {
       await route.fulfill({

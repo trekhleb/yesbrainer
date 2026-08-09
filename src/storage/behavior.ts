@@ -91,6 +91,14 @@ export interface BehaviorSettings {
    */
   includePriorMediator?: boolean
   /**
+   * Hold a screen wake lock while a council is running, so the device
+   * doesn't auto-lock mid-debate and cut the run off. Default →
+   * `DEFAULT_KEEP_AWAKE_DURING_RUN` (`true`). It cannot keep the screen on
+   * for an app the user has left — the browser drops the lock the moment
+   * the page hides — so its whole effect is on the case it's named for.
+   */
+  keepAwakeDuringRun?: boolean
+  /**
    * Drop the `{leaderboard}` substitution payload from the synthesis
    * prompt (Judge in Trial, Mediator in Consensus — both consume
    * `buildJudgeContext`). Lets users A/B "synthesise from prose alone"
@@ -230,6 +238,15 @@ export const DEFAULT_INCLUDE_PRIOR_MEDIATOR = true
  * default.
  */
 export const DEFAULT_SHOW_LEADERBOARD_TO_JUDGE = true
+
+/**
+ * Default for `keepAwakeDuringRun`. ON: a run is user-initiated and
+ * bounded, and the lock is released the instant the page is hidden — so it
+ * can only ever keep the screen awake for someone sitting there waiting for
+ * their council. Weighed against that, the cost it avoids is a debate the
+ * user paid for being cut in half by an auto-lock.
+ */
+export const DEFAULT_KEEP_AWAKE_DURING_RUN = true
 
 /**
  * Default for `showCommentsToJudge`. ON for the same reason — voter

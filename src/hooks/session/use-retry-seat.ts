@@ -45,12 +45,19 @@ export function useRetrySeat({
   council,
   setCouncil,
   abortRef,
+  runStartingRef,
   isBusy,
   setSeatRetry,
 }: {
   council: Council | null
   setCouncil: React.Dispatch<React.SetStateAction<Council | null>>
   abortRef: React.MutableRefObject<AbortController | null>
+  /** Set, synchronously, while a resume is being started. `isBusy` can't
+   *  cover that window: it only flips once the run's first `setState`
+   *  commits, and auto-resume fires without a click — so a retry tapped in
+   *  between would become a second writer, and `appendTurn` replaces a
+   *  turn's events wholesale. Same ref shape as `abortRef` above. */
+  runStartingRef: React.MutableRefObject<string | null>
   /** True while any parent phase — including this retry's own overlay —
    *  is in flight; a retry must not race them. */
   isBusy: boolean
@@ -60,7 +67,7 @@ export function useRetrySeat({
 } {
   const retrySeatAnswer = useCallback(
     async (turnId: string, seatId: string) => {
-      if (!council || isBusy) return
+      if (!council || isBusy || runStartingRef.current !== null) return
 
       const turn = council.turns.find((t) => t.id === turnId)
       if (!turn) return
@@ -134,7 +141,7 @@ export function useRetrySeat({
         () => setSeatRetry(null),
       )
     },
-    [council, setCouncil, abortRef, isBusy, setSeatRetry],
+    [council, setCouncil, abortRef, runStartingRef, isBusy, setSeatRetry],
   )
 
   return { retrySeatAnswer }

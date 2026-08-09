@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react'
 import {
   getStreamingCouncilIds,
+  getStreamingTurnIds,
   subscribeCouncilStreams,
 } from '@/utils/session/active-streams'
 
@@ -14,4 +15,17 @@ import {
  */
 export function useStreamingCouncilIds(): ReadonlySet<string> {
   return useSyncExternalStore(subscribeCouncilStreams, getStreamingCouncilIds)
+}
+
+/**
+ * Ids of *turns* a run is currently driving.
+ *
+ * The council-level set above can't answer "is this turn being worked on?"
+ * — it also counts the fire-and-forget titler, so a council whose title is
+ * still generating reads as busy. The paused card needs the precise
+ * question: it must not announce "picking up where it stopped" over a turn
+ * nobody is resuming, nor hide a Resume button that would have worked.
+ */
+export function useStreamingTurnIds(): ReadonlySet<string> {
+  return useSyncExternalStore(subscribeCouncilStreams, getStreamingTurnIds)
 }

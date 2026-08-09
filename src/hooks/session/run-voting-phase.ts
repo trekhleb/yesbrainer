@@ -87,7 +87,16 @@ export async function runVotingPhase(args: {
       rawResponse: null,
     }
   }
-  setVotingTurn({ id: turnId, perVoter: initialPerVoter, votingLabels })
+  // Merged, not replaced: a resumed turn seeds this state with the votes an
+  // interrupted attempt already landed, and only the *pending* voters reach
+  // this fan-out. Clobbering would blank those settled cards for the length
+  // of the resume. (On a fresh run there is nothing to merge and the result
+  // is identical to the previous assignment.)
+  setVotingTurn((cur) =>
+    cur && cur.id === turnId
+      ? { ...cur, perVoter: { ...cur.perVoter, ...initialPerVoter }, votingLabels }
+      : { id: turnId, perVoter: initialPerVoter, votingLabels },
+  )
 
   const updatePerVoter = (
     seatId: string,
