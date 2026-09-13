@@ -21,6 +21,7 @@ import {
 } from 'baseui/typography'
 import type { IconType } from 'react-icons'
 import {
+  FiColumns,
   FiGithub,
   FiHardDrive,
   FiKey,
@@ -28,9 +29,16 @@ import {
   FiUnlock,
   FiUserX,
 } from 'react-icons/fi'
+import { TbInfoSquareRounded } from 'react-icons/tb'
+import { NavLink } from 'react-router-dom'
 import { BrandMark } from '@/components/brand-mark'
 import { DeliberationCardContent } from '@/components/deliberation-card-content'
 import { ProvidersStrip } from '@/components/providers-strip'
+import {
+  ABOUT_PATH,
+  COMPARISON_PATH_PREFIX,
+  PRIVATE_PATH,
+} from '@/hooks/use-app-route'
 import { structureColorSet } from '@/models/social-structure-colors'
 import { SOCIAL_STRUCTURES } from '@/models/social-structures'
 import { GITHUB_ISSUES_URL, GITHUB_REPO_URL } from '@/utils/external-links'
@@ -161,6 +169,23 @@ export function AboutContent({ children }: { children?: React.ReactNode }) {
     gap: '4px',
     ':hover': { color: theme.colors.contentPrimary },
     transition: 'color 120ms ease',
+  })
+  // "You are here": the current page's own link drops the hover affordance
+  // and reads in primary ink — the standard quiet footer-nav convention.
+  const colophonLinkCurrent = css({
+    color: theme.colors.contentPrimary,
+    textDecoration: 'none',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '4px',
+    cursor: 'default',
+  })
+  const colophonRow = css({
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+    gap: '4px 8px',
   })
   return (
     <div
@@ -475,11 +500,11 @@ export function AboutContent({ children }: { children?: React.ReactNode }) {
           </div>
         </div>
 
-        {/* Colophon — the quiet trust closer, three centered lines:
-            the license/no-warranty statement, then
-            the two action links, then the copyright. Sits right under "Why
-            it's different"; this is where the "Free & open source" tile's
-            claim gets its proof links. */}
+        {/* Colophon — the quiet trust closer, four centered lines: the
+            license/no-warranty statement, the site links, the two repo
+            links, then the copyright. Sits right under "Why it's
+            different"; this is where the "Free & open source" tile's claim
+            gets its proof links. */}
         <div
           className={css({
             display: 'flex',
@@ -495,15 +520,52 @@ export function AboutContent({ children }: { children?: React.ReactNode }) {
             Free &amp; open source under AGPL-3.0 · provided as-is, no
             warranty
           </span>
-          <div
-            className={css({
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexWrap: 'wrap',
-              gap: '4px 8px',
-            })}
-          >
+          {/* Site links — the public documents, linked from the *main
+              column* on purpose. The sidebar footer links About too, but on
+              phones the sidebar is a closed drawer that isn't in the DOM,
+              and search engines index with a phone viewport — a link that
+              lives only there is invisible to the crawler. This row renders
+              at every viewport on both surfaces that show AboutContent (the
+              front page's first-run gate and /about), so it is the one
+              crawlable path from the indexed front page to /about, /vs and
+              /private. Real hrefs (NavLink), never onClick navigation, for
+              the same reason. About wears the sidebar's info glyph so the
+              two surfaces read as the same link; NavLink marks the current
+              page with aria-current, styled as "you are here" (only /about
+              can be current — the front page's first-run gate has no route
+              of its own). */}
+          <div className={colophonRow}>
+            <NavLink
+              to={ABOUT_PATH}
+              className={({ isActive }) =>
+                isActive ? colophonLinkCurrent : colophonLink
+              }
+            >
+              <TbInfoSquareRounded size={14} aria-hidden />
+              About
+            </NavLink>
+            <span aria-hidden>·</span>
+            <NavLink
+              to={COMPARISON_PATH_PREFIX}
+              className={({ isActive }) =>
+                isActive ? colophonLinkCurrent : colophonLink
+              }
+            >
+              <FiColumns size={13} aria-hidden />
+              How it compares
+            </NavLink>
+            <span aria-hidden>·</span>
+            <NavLink
+              to={PRIVATE_PATH}
+              className={({ isActive }) =>
+                isActive ? colophonLinkCurrent : colophonLink
+              }
+            >
+              <FiUserX size={13} aria-hidden />
+              No account, no server
+            </NavLink>
+          </div>
+          <div className={colophonRow}>
             <a
               href={GITHUB_REPO_URL}
               target="_blank"
