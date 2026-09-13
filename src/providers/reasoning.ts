@@ -10,8 +10,9 @@ import type { ReasoningEffort } from '@/types/council'
  *
  *  - **Nearest legal value, never exceeding what the user picked.** `max`
  *    clamps *down* to a model's top rung (OpenAI `xhigh`, Groq `high`);
- *    `off` clamps *up* only on `thinkingAlwaysOn` models (Fable 5, Pro-tier
- *    Gemini), where no cheaper state legally exists.
+ *    `off` clamps *up* only on `thinkingAlwaysOn` models (Fable 5.x, GPT-6
+ *    Astra, Pro-tier and 3.7+ Flash Gemini), where no cheaper state legally
+ *    exists.
  *  - **`off` is a rung, not a separate toggle.** Most providers encode
  *    on/off inside the same scale (OpenAI `'none'`, Gemini budget `0`), so a
  *    standalone boolean would be a fake affordance on most seats.
@@ -49,8 +50,8 @@ const GOOGLE_BUDGET_TOKENS: Record<ActiveEffort, number> = {
   max: 24576,
 }
 
-/** Pro-tier Gemini rejects `thinkingBudget: 0` (thinking can't be off) —
- *  `off` clamps to this floor instead of erroring. */
+/** Pro-tier and 3.7+ Flash Gemini reject thinking off (`thinkingBudget: 0`
+ *  / the `minimal` level) — `off` clamps to this floor instead of erroring. */
 const GOOGLE_MIN_THINKING_BUDGET = 128
 
 export function buildReasoningProviderOptions(
@@ -107,13 +108,19 @@ export function buildReasoningProviderOptions(
         },
       }
     case 'openai':
-      // GPT-5.x has no separate thinking toggle — `reasoningEffort` *is* the
-      // dial, with `'none'` as off and `'xhigh'` as its top ("max" clamps
-      // down to it; OpenAI has no `'max'`). `reasoningSummary` streams the
-      // readable summary (raw reasoning is encrypted) — skipped for 'none',
-      // where there is nothing to summarize.
+      // GPT-5.x / GPT-6 have no separate thinking toggle — `reasoningEffort`
+      // *is* the dial, with `'none'` as off and `'xhigh'` as the top the
+      // installed `@ai-sdk/openai` types ("max" clamps down to it; GPT-6
+      // Astra accepts `'max'` upstream — lift the clamp when the provider
+      // package is bumped). `reasoningSummary` streams the readable summary
+      // (raw reasoning is encrypted) — skipped for 'none', where there is
+      // nothing to summarize.
       if (effort === 'off') {
-        return { openai: { reasoningEffort: 'none' } }
+        // GPT-6 Astra 400s on `'none'` (and offers no `'minimal'`) — clamp
+        // to its cheapest legal rung, the same shape as Fable's clamp above.
+        return entry.thinkingAlwaysOn
+          ? { openai: { reasoningEffort: 'low', reasoningSummary: 'auto' } }
+          : { openai: { reasoningEffort: 'none' } }
       }
       return {
         openai: {
@@ -122,8 +129,9 @@ export function buildReasoningProviderOptions(
         },
       }
     case 'google':
-      // Gemini's dial is a token budget: 0 = off (except Pro tiers, which
-      // reject 0 — clamped to a minimal budget), bigger = harder thinking.
+      // Gemini's dial is a token budget: 0 = off (except `thinkingAlwaysOn`
+      // models — Pro tiers and 3.7+ Flash reject it — clamped to a minimal
+      // budget), bigger = harder thinking.
       // `includeThoughts` streams the thought summaries whenever thinking
       // can actually happen (any non-zero budget).
       if (effort === 'off' && !entry.thinkingAlwaysOn) {
@@ -169,7 +177,7 @@ export function buildReasoningProviderOptions(
  * anyway visible to the live strip. That's why Anthropic's adaptive family
  * is mostly absent: sending `thinking:{type:'adaptive'}` just to carry
  * `display` would *turn thinking on* for a default-off model (Opus 4.8).
- * The one exception is `thinkingAlwaysOn` (Fable 5), where explicit
+ * The one exception is `thinkingAlwaysOn` (Fable 5.x), where explicit
  * adaptive is byte-for-byte the state it already runs in. Known gap,
  * accepted: Opus 5 and Sonnet 5 under Default think adaptively but
  * invisibly — we have no registry signal separating "defaults to adaptive"
@@ -238,7 +246,11 @@ export function describeReasoningResolution(
       }
       return `${effort} effort`
     case 'openai':
-      if (effort === 'off') return 'thinking off'
+      if (effort === 'off') {
+        return entry.thinkingAlwaysOn
+          ? 'always thinks — low effort'
+          : 'thinking off'
+      }
       return effort === 'max' ? 'extra-high effort' : `${effort} effort`
     case 'google':
       if (effort === 'off') {

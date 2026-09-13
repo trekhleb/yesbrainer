@@ -40,7 +40,7 @@ To wipe local state: DevTools → Application → IndexedDB → delete `yesbrain
 
 **Unlisted ids resolve to a fallback entry, never a throw.** Every persisted `TurnEvent` snapshots its `modelId` and councils/imports outlive catalog churn, so `getModel()` on an unknown id returns a cached stub (label = `"<id tail> (unlisted)"`, provider parsed from the prefix, capabilities off) instead of throwing. Registry policy stays "prefer never removing entries" — the fallback is the safety net, not licence to churn.
 
-**The OpenRouter slice is generated.** Native providers are hand-maintained in `registry.ts`; OpenRouter models live in `registry.generated.ts`, written by `npm run update-models-catalog` (fetches the public model list, filters to a curated allowlist, derives capabilities; committed so the bundle never fetches at runtime). It also prints newly discovered models from tracked vendors — the nudge when something new ships. Native `providerModelId`s are bumped by hand.
+**The OpenRouter slice is generated.** Native providers are hand-maintained in `registry.ts`; OpenRouter models live in `registry.generated.ts`, written by `npm run update-models-catalog` (fetches the public model list, filters to a curated allowlist plus a deprecated list — superseded ids are still emitted, flagged, so the never-delete rule holds for routed models too — derives capabilities; committed so the bundle never fetches at runtime). It also prints newly discovered models from tracked vendors — the nudge when something new ships. Native `providerModelId`s are bumped by hand.
 
 ### Provider packages
 

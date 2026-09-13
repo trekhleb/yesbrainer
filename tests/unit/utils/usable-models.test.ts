@@ -36,7 +36,7 @@ describe('pickSmartestModelIds', () => {
     const entries = picks.map((id) => getModel(id))
     expect(entries.map((m) => m.provider)).toEqual(['anthropic', 'openai'])
     // The explicit designation, not registry position (Anthropic's first
-    // entry is Opus — the default seat — but its `smartest` is Fable 5).
+    // entry is Opus — the default seat — but its `smartest` is Fable 5.1).
     expect(entries.every((m) => m.smartest)).toBe(true)
   })
 

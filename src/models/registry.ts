@@ -33,18 +33,19 @@ export interface ModelEntry {
    *  models (Claude 4.5 and older, e.g. Haiku 4.5) that still take the legacy
    *  `{type:'enabled', budget_tokens}` shape. Ignored for non-Anthropic. */
   thinkingApi?: 'adaptive' | 'budget'
-  /** The model cannot turn thinking off (Fable 5 400s on `disabled`;
-   *  Pro-tier Gemini rejects `thinkingBudget: 0`). The user's `off` clamps
-   *  *up* to the model's cheapest legal state instead of erroring —
-   *  `providers/reasoning.ts` owns the clamp, the thinking UI disclosures
-   *  read this flag to say "always thinks". */
+  /** The model cannot turn thinking off (Fable 5 / 5.1 400 on `disabled`,
+   *  GPT-6 Astra 400s on effort `none`, Pro-tier and 3.7+ Flash Gemini
+   *  reject thinking off). The user's `off` clamps *up* to the model's
+   *  cheapest legal state instead of erroring — `providers/reasoning.ts`
+   *  owns the clamp, the thinking UI disclosures read this flag to say
+   *  "always thinks". */
   thinkingAlwaysOn?: boolean
   /** This provider's most powerful model — the one the "Smartest available"
    *  roster preset seats (`pickSmartestModelIds`). Exactly one per native
    *  provider (guarded by a registry unit test); explicitly independent of
    *  registry order, which stays the *default-seat* / picker order (e.g.
-   *  Anthropic: Opus 4.8 is the sane zero-config default, but the flag sits
-   *  on Fable 5 — clicking the preset is the explicit max-power request). */
+   *  Anthropic: Opus 5 is the sane zero-config default, but the flag sits
+   *  on Fable 5.1 — clicking the preset is the explicit max-power request). */
   smartest?: boolean
   /** Superseded model kept for history instead of being deleted. The update
    *  workflow is *add the new entry + flag the old one* — never remove:
@@ -125,10 +126,32 @@ function stripModelIdPrefix(modelId: string): string {
 }
 
 const NATIVE_MODELS = [
-  /* ---------- Llama -------------- */
+  /* ---------- Ollama (local) -------------- */
   {
-    modelId: 'ollama:llama3.1',
+    // Gemma 4 leads the local group: Google's open-weight model with tools,
+    // vision, and thinking — the strongest of the popular tool-capable
+    // Ollama tags (`gemma4` = the e4b tag, ~9.6 GB). Ollama is the user's
+    // own install, so these entries are default suggestions, not a list of
+    // what's pulled. `contextWindow` is deliberately NOT the tag's
+    // advertised 128K: Ollama serves every model at its *server-side*
+    // context length (4096 by default, `OLLAMA_CONTEXT_LENGTH` raises it),
+    // so the context meter keeps the same conservative figure as Llama
+    // below rather than under-reporting until history silently truncates.
+    modelId: 'ollama:gemma4',
     smartest: true,
+    label: 'Gemma 4',
+    provider: 'ollama',
+    tier: 'local',
+    country: 'USA',
+    developer: 'Google',
+    contextWindow: 8192,
+    capabilities: { tools: true, vision: true, reasoning: true },
+    defaultSystemPrompt: DEFAULT_PARTICIPANT_PROMPT,
+  },
+  {
+    // Kept live (not deprecated) as the small budget seat and the Ollama
+    // rung of `TITLE_GENERATOR_CHAIN` (`storage/behavior.ts`).
+    modelId: 'ollama:llama3.1',
     label: 'Llama 3.1 8B',
     provider: 'ollama',
     tier: 'local',
@@ -144,10 +167,10 @@ const NATIVE_MODELS = [
     // Opus leads the Anthropic group deliberately: it's the first reachable
     // model `firstUsableModelId` returns for an Anthropic-key user, so it
     // becomes the default seat / solo-chat / Judge / Mediator model. We keep
-    // Opus (not the pricier, refusal-prone Fable 5 below) as the zero-config
+    // Opus (not the pricier, refusal-prone Fable 5.1 below) as the zero-config
     // flagship this high-stakes-decisions app wants out of the box — a sane
     // cost/capability default. (The 2-seat floor still seeds the second seat
-    // from a *different* provider.) Fable 5 is an opt-in max-power option;
+    // from a *different* provider.) Fable 5.1 is an opt-in max-power option;
     // Sonnet 5 is the cheaper workhorse.
     //
     // Opus 5 supersedes Opus 4.8 at identical pricing, so there's no
@@ -185,14 +208,33 @@ const NATIVE_MODELS = [
     defaultSystemPrompt: DEFAULT_PARTICIPANT_PROMPT,
   },
   {
-    // Anthropic's most capable widely-released model — offered opt-in and
-    // kept *below* Opus so it's not the zero-config default: it's premium-
-    // priced (~2x Opus), runs always-on thinking, and its safety classifiers
-    // can refuse benign-adjacent prompts (this app wires no fallback). It also
-    // requires 30-day data retention, so a zero-retention org gets a 400.
-    // Pick it when you explicitly want maximum capability.
-    modelId: 'anthropic:claude-fable-5',
+    // Anthropic's most capable widely-released model (Sept 2026, Fable 5's
+    // successor at the same price) — offered opt-in and kept *below* Opus so
+    // it's not the zero-config default: it's premium-priced (2x Opus), runs
+    // always-on thinking, and its safety classifiers can refuse
+    // benign-adjacent prompts (this app wires no fallback). It also requires
+    // 30-day data retention, so a zero-retention org gets a 400. New in 5.1:
+    // forced `tool_choice` (`any` / `tool`) is a 400 — harmless here, every
+    // call leaves tool choice at `auto`. Pick it when you explicitly want
+    // maximum capability.
+    modelId: 'anthropic:claude-fable-5-1',
     smartest: true,
+    label: 'Claude Fable 5.1',
+    provider: 'anthropic',
+    thinkingAlwaysOn: true,
+    tier: 'paid',
+    country: 'USA',
+    developer: 'Anthropic',
+    contextWindow: 1_000_000,
+    capabilities: { tools: true, vision: true, reasoning: true },
+    defaultSystemPrompt: DEFAULT_PARTICIPANT_PROMPT,
+  },
+  {
+    // Superseded by Fable 5.1 above. Still served (Anthropic lists it as
+    // legacy, retirement not before mid-2027); kept listed because the
+    // recorded demo councils seat it.
+    modelId: 'anthropic:claude-fable-5',
+    deprecated: true,
     label: 'Claude Fable 5',
     provider: 'anthropic',
     thinkingAlwaysOn: true,
@@ -230,25 +272,47 @@ const NATIVE_MODELS = [
 
   /* ---------- OpenAI -------------- */
   {
-    // Sol leads the OpenAI group: the top rung of the GPT-5.6 generation
-    // (~1M context), so an OpenAI-key user's default seat is a true
-    // flagship — the same intent as Opus leading Anthropic. GPT-5.6 ships as
-    // three named price tiers rather than one model: Sol, then Terra and Luna
-    // below, with the GPT-5.4 mini/nano pair still covering the budget end.
+    // Sol leads the OpenAI group as the zero-config default seat: the top
+    // rung of the GPT-5.6 generation (~1M context) at well under half of
+    // Astra's price — the same cost/capability call as Opus leading
+    // Anthropic while Fable carries `smartest`. GPT-5.6 ships as three named
+    // price tiers rather than one model: Sol, then Terra and Luna below,
+    // with the GPT-5.4 mini/nano pair still covering the budget end.
     //
-    // Also the `smartest` pick, deliberately: each 5.6 tier has a `-pro`
-    // sibling, and the pro tier does NOT support streaming (the same
-    // constraint that kept gpt-5.5-pro out) — every participant seat here
-    // streams, so Pro is unusable as a seat. Re-check if OpenAI ever ships
-    // streaming for the pro tier.
+    // No `-pro` entries: the 5.6 pro tier does NOT support streaming (the
+    // same constraint that kept gpt-5.5-pro out) — every participant seat
+    // here streams, so Pro is unusable as a seat. Re-check if OpenAI ever
+    // ships streaming for the pro tier.
     modelId: 'openai:gpt-5.6-sol',
-    smartest: true,
     label: 'GPT-5.6 Sol',
     provider: 'openai',
     tier: 'paid',
     country: 'USA',
     developer: 'OpenAI',
     contextWindow: 1_000_000,
+    capabilities: { tools: true, vision: true, reasoning: true },
+    defaultSystemPrompt: DEFAULT_PARTICIPANT_PROMPT,
+  },
+  {
+    // GPT-6 Astra (Sept 2026) — OpenAI's most capable model, hence the
+    // `smartest` flag, but kept *below* Sol so it's not the default seat:
+    // 2.5x Sol's price ($10/$50 vs $4/$20 per MTok, plus a pricier
+    // long-context tier beyond the standard window). Two API differences
+    // the thinking dial depends on: effort `none` returns a 400 (and
+    // `minimal` isn't offered), so `thinkingAlwaysOn` clamps the user's
+    // `off` up to `low`; and its top rung is `max`, which the installed
+    // `@ai-sdk/openai` doesn't type yet — `max` clamps down to `xhigh` until
+    // the provider package is bumped (see `providers/reasoning.ts`). No
+    // "Astra Pro" entry: OpenAI documents no such model id.
+    modelId: 'openai:gpt-6-astra',
+    smartest: true,
+    label: 'GPT-6 Astra',
+    provider: 'openai',
+    thinkingAlwaysOn: true,
+    tier: 'paid',
+    country: 'USA',
+    developer: 'OpenAI',
+    contextWindow: 1_050_000,
     capabilities: { tools: true, vision: true, reasoning: true },
     defaultSystemPrompt: DEFAULT_PARTICIPANT_PROMPT,
   },
@@ -329,11 +393,34 @@ const NATIVE_MODELS = [
   /* ---------- Google -------------- */
   {
     // Leads the Google group as the *default* seat: newer than 3.1 Pro
-    // (Google's versioning is non-linear), GA/stable, and the current top of
-    // the Flash line. NOT the `smartest` pick though — 3.1 Pro (below) wins
-    // the deep-reasoning benchmarks this app's deliberation workload leans
-    // on, so the explicit flag sits there.
+    // (Google's versioning is non-linear), GA/stable (Sept 2026), and the
+    // current top of the Flash line — one current Flash listed, as before
+    // (3.7 Flash from August is the same price and still supported, but
+    // adds nothing a picker needs). NOT the `smartest` pick though — 3.1 Pro
+    // (below) wins the deep-reasoning benchmarks this app's deliberation
+    // workload leans on, so the explicit flag sits there.
+    //
+    // Unlike 3.6, the 3.7+ Flash models reject the `minimal` thinking level
+    // and can't turn thinking off — hence `thinkingAlwaysOn`, so the user's
+    // `off` clamps to the minimal budget instead of erroring. Google also
+    // notes 3.8 "can use more tokens on longer running and complex tasks,
+    // by design" — a lower rung is the lever for everyday questions.
+    modelId: 'google:gemini-3.8-flash',
+    label: 'Gemini 3.8 Flash',
+    provider: 'google',
+    thinkingAlwaysOn: true,
+    tier: 'paid',
+    country: 'USA',
+    developer: 'Google',
+    contextWindow: 1_000_000,
+    capabilities: { tools: true, vision: true, reasoning: true },
+    defaultSystemPrompt: DEFAULT_PARTICIPANT_PROMPT,
+  },
+  {
+    // Superseded by 3.8 Flash above. Still stable upstream with no shutdown
+    // date, so councils seating it keep working.
     modelId: 'google:gemini-3.6-flash',
+    deprecated: true,
     label: 'Gemini 3.6 Flash',
     provider: 'google',
     tier: 'paid',
@@ -344,7 +431,7 @@ const NATIVE_MODELS = [
     defaultSystemPrompt: DEFAULT_PARTICIPANT_PROMPT,
   },
   {
-    // Superseded by 3.6 Flash above.
+    // Superseded by 3.6 Flash (itself superseded by 3.8 above).
     modelId: 'google:gemini-3.5-flash',
     deprecated: true,
     label: 'Gemini 3.5 Flash',
@@ -424,7 +511,46 @@ const NATIVE_MODELS = [
     defaultSystemPrompt: DEFAULT_PARTICIPANT_PROMPT,
   },
   {
+    // Groq's own named replacement for the retired Llama 3.1 8B Instant
+    // (production tier; the 120B's smaller sibling — tools + reasoning,
+    // text only, same `low`/`medium`/`high` effort dial).
+    modelId: 'groq:openai/gpt-oss-20b',
+    label: 'GPT-OSS 20B (Groq)',
+    provider: 'groq',
+    tier: 'free',
+    country: 'USA',
+    developer: 'OpenAI · Groq',
+    contextWindow: 131_072,
+    capabilities: { tools: true, vision: false, reasoning: true },
+    defaultSystemPrompt: DEFAULT_PARTICIPANT_PROMPT,
+  },
+  {
+    // The group's non-OpenAI seat, replacing the retired Llama 3.3 70B.
+    // Groq's named replacement is qwen3.6-27b, but 3.8 is the newer sibling
+    // with the same preview status and capabilities (tools + vision +
+    // reasoning, 16K max output) — and, decisively, its effort dial accepts
+    // `none`/`low`/`medium`/`high` (3.6 only takes `none`/`default`, which
+    // the Groq branch in `providers/reasoning.ts` doesn't speak). Preview
+    // on Groq means "evaluation only, may be discontinued at short notice":
+    // if this seat starts erroring, check the Groq models page for the
+    // current Qwen id.
+    modelId: 'groq:qwen/qwen3.8-27b',
+    label: 'Qwen3.8 27B (Groq)',
+    provider: 'groq',
+    tier: 'free',
+    country: 'China',
+    developer: 'Alibaba · Groq',
+    contextWindow: 131_072,
+    capabilities: { tools: true, vision: true, reasoning: true },
+    defaultSystemPrompt: DEFAULT_PARTICIPANT_PROMPT,
+  },
+  {
+    // Groq shut both Llama models off for free and developer-tier keys on
+    // 2026-08-16 (enterprise-only since) — a seated Llama now errors, so it
+    // is hidden from pickers. Kept listed so persisted councils keep their
+    // label, logo, and capabilities (the test fixtures' text-only model too).
     modelId: 'groq:llama-3.3-70b',
+    deprecated: true,
     label: 'Llama 3.3 70B (Groq)',
     provider: 'groq',
     providerModelId: 'llama-3.3-70b-versatile',
@@ -436,7 +562,9 @@ const NATIVE_MODELS = [
     defaultSystemPrompt: DEFAULT_PARTICIPANT_PROMPT,
   },
   {
+    // See Llama 3.3 70B above — same 2026-08-16 free-tier shutdown.
     modelId: 'groq:llama-3.1-8b-instant',
+    deprecated: true,
     label: 'Llama 3.1 8B Instant (Groq)',
     provider: 'groq',
     tier: 'free',

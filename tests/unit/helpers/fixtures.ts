@@ -26,7 +26,8 @@ export const MODEL_B: NativeModelId = 'openai:gpt-5.4'
 export const MODEL_C: NativeModelId = 'google:gemini-3.5-flash'
 /** tools + vision + reasoning (the "rich" seat). */
 export const VISION_MODEL: NativeModelId = 'openai:gpt-5.4'
-/** no vision, no reasoning (Groq Llama — the only non-reasoning native left). */
+/** no vision, no reasoning (Groq Llama — deprecated since Groq's free-tier
+ *  shutdown but kept listed, so `getModel` still resolves real capabilities). */
 export const TEXT_ONLY_MODEL: NativeModelId = 'groq:llama-3.3-70b'
 
 export function seat(id: string, modelId: NativeModelId = MODEL_A): Seat {

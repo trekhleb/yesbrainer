@@ -98,7 +98,7 @@ describe('registry', () => {
 })
 
 /**
- * Catalog-currency pins for the July 2026 refresh.
+ * Catalog-currency pins for the July and September 2026 refreshes.
  *
  * These name model ids literally, against this suite's usual habit of
  * deriving expectations from the registry — that's the point. A catalog
@@ -116,10 +116,24 @@ describe('catalog currency', () => {
     ['openai:gpt-5.6-terra', 'openai:gpt-5.4'],
     ['google:gemini-3.6-flash', 'google:gemini-3.5-flash'],
     ['google:gemini-3.5-flash-lite', 'google:gemini-3.1-flash-lite'],
+    // September 2026
+    ['anthropic:claude-fable-5-1', 'anthropic:claude-fable-5'],
+    ['google:gemini-3.8-flash', 'google:gemini-3.6-flash'],
+    ['groq:openai/gpt-oss-20b', 'groq:llama-3.1-8b-instant'],
+    ['groq:qwen/qwen3.8-27b', 'groq:llama-3.3-70b'],
+  ]
+  /** Additions with no predecessor to flag (a new tier, not a swap). */
+  const ADDITIONS = ['openai:gpt-6-astra', 'ollama:gemma4']
+  // Pins accumulate across refreshes, so a successor can itself be superseded
+  // later (3.5 → 3.6 → 3.8 Flash): only the chain heads must still be live.
+  const SUPERSEDED = new Set(SUPERSESSIONS.map(([, old]) => old))
+  const CURRENT = [
+    ...SUPERSESSIONS.map(([s]) => s).filter((s) => !SUPERSEDED.has(s)),
+    ...ADDITIONS,
   ]
 
-  it('every successor is listed and selectable', () => {
-    for (const [successor] of SUPERSESSIONS) {
+  it('every current successor is listed and selectable', () => {
+    for (const successor of CURRENT) {
       const entry = registry.find((m) => m.modelId === successor)
       expect(entry, `missing successor entry: ${successor}`).toBeDefined()
       expect(
@@ -144,12 +158,27 @@ describe('catalog currency', () => {
   })
 
   it('newly added flagships derive the wire id from their registry id', () => {
-    // None of the July 2026 additions is a dated snapshot, so each one's wire
-    // id should be the bare suffix. A stray override here is invisible until
+    // None of these additions is a dated snapshot, so each one's wire id
+    // should be the bare suffix. A stray override here is invisible until
     // the first real call 404s.
-    for (const [successor] of SUPERSESSIONS) {
+    for (const successor of CURRENT) {
       const entry = registry.find((m) => m.modelId === successor)
       expect(entry?.providerModelId).toBe(successor.split(':')[1])
+    }
+  })
+
+  it('models that reject thinking-off carry `thinkingAlwaysOn`', () => {
+    // `providers/reasoning.ts` keys the `off` clamp off this flag; forgetting
+    // it is invisible until a user's `off` rung 400s at the first real call.
+    for (const id of [
+      'anthropic:claude-fable-5-1',
+      'openai:gpt-6-astra',
+      'google:gemini-3.8-flash',
+    ]) {
+      expect(
+        registry.find((m) => m.modelId === id)?.thinkingAlwaysOn,
+        `${id} cannot turn thinking off but lacks thinkingAlwaysOn`,
+      ).toBe(true)
     }
   })
 })

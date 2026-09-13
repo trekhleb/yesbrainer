@@ -50,16 +50,34 @@ const VENDOR_META = {
 // Curated allow-list — which OpenRouter models surface in the picker. Keep it
 // vendor-diverse; native-routed providers (Anthropic/OpenAI/Google/Groq) stay
 // in registry.ts, so prefer vendors we DON'T cover natively here.
-// One current flagship per vendor: grok-4.3→4.5,
-// deepseek chat+r1→v4-pro, qwen 2.5→3.7-max, mistral-large→-2512, +kimi.
+// One current flagship per vendor (Sept 2026): grok-4.6, deepseek-v4-pro-0813
+// (the bare `deepseek-v4-pro` id pins the older 0423 snapshot), qwen3.8-max,
+// kimi-k3, mistral-large-2512 (still Mistral's largest), command-a.
 const ALLOWED_OPENROUTER_MODEL_IDS = [
-  'deepseek/deepseek-v4-pro',
-  'qwen/qwen3.7-max',
-  'moonshotai/kimi-k2.6',
+  'deepseek/deepseek-v4-pro-0813',
+  'qwen/qwen3.8-max-0902',
+  'moonshotai/kimi-k3',
   'mistralai/mistral-large-2512',
-  'x-ai/grok-4.5',
+  'x-ai/grok-4.6',
   'cohere/command-a',
 ]
+
+// Superseded ids stay emitted, flagged `deprecated: true` — the same
+// add-the-successor-flag-the-predecessor rule as the native catalog (see the
+// `deprecated` field doc in registry.ts): hidden from pickers, but a persisted
+// council seating one keeps its real label and capabilities instead of
+// degrading to the `getModel` stub. Move an id here when its successor lands
+// above; never just delete it.
+const DEPRECATED_OPENROUTER_MODEL_IDS = [
+  'deepseek/deepseek-v4-pro', // → deepseek-v4-pro-0813
+  'qwen/qwen3.7-max', // → qwen3.8-max-0902
+  'moonshotai/kimi-k2.6', // → kimi-k3
+  'x-ai/grok-4.5', // → grok-4.6
+]
+const CURATED_OPENROUTER_MODEL_IDS = new Set([
+  ...ALLOWED_OPENROUTER_MODEL_IDS,
+  ...DEPRECATED_OPENROUTER_MODEL_IDS,
+])
 
 const vendorOf = (id) => id.split('/')[0]
 
@@ -88,7 +106,7 @@ const int = (v) => {
 // *OpenRouter* logo (not the vendor's), so the label has to carry the vendor.
 const cleanLabel = (name) => name.replace(': ', ' ')
 
-function toEntry(m) {
+function toEntry(m, deprecated) {
   const meta = VENDOR_META[vendorOf(m.id)] ?? {
     developer: vendorOf(m.id),
     country: 'Unknown',
@@ -97,6 +115,7 @@ function toEntry(m) {
   const params = m.supported_parameters ?? []
   return {
     modelId: `openrouter:${m.id}`,
+    deprecated,
     label: cleanLabel(m.name ?? m.id),
     provider: 'openrouter',
     providerModelId: m.id,
@@ -123,23 +142,34 @@ const byId = new Map(data.map((m) => [m.id, m]))
 
 const entries = []
 const missing = []
-for (const id of ALLOWED_OPENROUTER_MODEL_IDS) {
-  const m = byId.get(id)
-  if (m) entries.push(toEntry(m))
-  else missing.push(id)
+for (const [ids, deprecated] of [
+  [ALLOWED_OPENROUTER_MODEL_IDS, false],
+  [DEPRECATED_OPENROUTER_MODEL_IDS, true],
+]) {
+  for (const id of ids) {
+    const m = byId.get(id)
+    if (m) entries.push(toEntry(m, deprecated))
+    else missing.push(id)
+  }
 }
-entries.sort((a, b) => a.label.localeCompare(b.label))
+// Live entries first — registry order is picker order, and each provider
+// group must lead with a live model — then the flagged ones; A–Z within.
+entries.sort(
+  (a, b) =>
+    Number(a.deprecated) - Number(b.deprecated) ||
+    a.label.localeCompare(b.label),
+)
 
 const discovered = data
   .map((m) => m.id)
-  .filter((id) => VENDOR_META[vendorOf(id)] && !ALLOWED_OPENROUTER_MODEL_IDS.includes(id))
+  .filter((id) => VENDOR_META[vendorOf(id)] && !CURATED_OPENROUTER_MODEL_IDS.has(id))
   .sort()
 
 const body = entries
   .map(
     (e) => `  {
     modelId: ${q(e.modelId)},
-    label: ${q(e.label)},
+${e.deprecated ? '    deprecated: true,\n' : ''}    label: ${q(e.label)},
     provider: 'openrouter',
     providerModelId: ${q(e.providerModelId)},
     tier: ${q(e.tier)},

@@ -105,8 +105,19 @@ describe('buildReasoningProviderOptions', () => {
     expect(buildReasoningProviderOptions(entry('openai'), 'high')).toEqual({
       openai: { reasoningEffort: 'high', reasoningSummary: 'auto' },
     })
-    // OpenAI has no 'max' — clamps down to its top rung.
+    // The installed provider types stop at 'xhigh' — max clamps down.
     expect(buildReasoningProviderOptions(entry('openai'), 'max')).toEqual({
+      openai: { reasoningEffort: 'xhigh', reasoningSummary: 'auto' },
+    })
+  })
+
+  it('always-on OpenAI (GPT-6 Astra): off clamps up to low effort', () => {
+    const astra = entry('openai', { thinkingAlwaysOn: true })
+    // `'none'` would 400 on Astra — off resolves to the cheapest legal rung.
+    expect(buildReasoningProviderOptions(astra, 'off')).toEqual({
+      openai: { reasoningEffort: 'low', reasoningSummary: 'auto' },
+    })
+    expect(buildReasoningProviderOptions(astra, 'max')).toEqual({
       openai: { reasoningEffort: 'xhigh', reasoningSummary: 'auto' },
     })
   })
@@ -216,6 +227,12 @@ describe('describeReasoningResolution', () => {
     expect(describeReasoningResolution(entry('openai'), 'max')).toBe(
       'extra-high effort',
     )
+    expect(
+      describeReasoningResolution(
+        entry('openai', { thinkingAlwaysOn: true }),
+        'off',
+      ),
+    ).toBe('always thinks — low effort')
     expect(describeReasoningResolution(entry('google'), 'medium')).toBe(
       '~4k thinking tokens',
     )
