@@ -127,7 +127,7 @@ export interface BehaviorSettings {
   /**
    * Preferred model for the LLM title-generator chain. When set,
    * the orchestrator tries this model first; falls back to the built-in
-   * priority chain (gpt-5.4-nano → gemini-3.5-flash-lite → haiku-4.5 → ollama:llama3.1)
+   * priority chain (gpt-6-luna → gemini-3.5-flash-lite → haiku-5.5 → ollama:llama3.1)
    * on auth / network / parse error. Undefined (the default) means
    * "use the chain from the top". Useful when an operator wants a
    * deterministic titler — e.g. always Ollama for offline work, or
@@ -280,9 +280,9 @@ export const DEFAULT_MIN_COMMENT_LENGTH = 0
  * `tests/unit/models/registry.test.ts`.
  */
 export const TITLE_GENERATOR_CHAIN: readonly NativeModelId[] = [
-  'openai:gpt-5.4-nano',
+  'openai:gpt-6-luna',
   'google:gemini-3.5-flash-lite',
-  'anthropic:claude-haiku-4-5',
+  'anthropic:claude-haiku-5-5',
   'ollama:llama3.1',
 ] as const
 

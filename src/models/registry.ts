@@ -33,18 +33,21 @@ export interface ModelEntry {
    *  models (Claude 4.5 and older, e.g. Haiku 4.5) that still take the legacy
    *  `{type:'enabled', budget_tokens}` shape. Ignored for non-Anthropic. */
   thinkingApi?: 'adaptive' | 'budget'
-  /** The model cannot turn thinking off (Fable 5 / 5.1 400 on `disabled`,
-   *  GPT-6 Astra 400s on effort `none`, Pro-tier and 3.7+ Flash Gemini
-   *  reject thinking off). The user's `off` clamps *up* to the model's
+  /** The model cannot turn thinking off (Fable 5 / 5.1 and Opus 5.5 400 on
+   *  `disabled`, GPT-6 Astra and 6.1 Sol 400 on effort `none`, Pro-tier and
+   *  3.7+ Flash Gemini reject thinking off). The user's `off` clamps *up* to
+   *  the model's
    *  cheapest legal state instead of erroring — `providers/reasoning.ts`
    *  owns the clamp, the thinking UI disclosures read this flag to say
-   *  "always thinks". */
+   *  "always thinks". Note it tracks "can't be turned off", not "is on by
+   *  default": Sonnet 5.5 / Haiku 5.5 think adaptively by default but still
+   *  accept `disabled`, so they carry no flag. */
   thinkingAlwaysOn?: boolean
   /** This provider's most powerful model — the one the "Smartest available"
    *  roster preset seats (`pickSmartestModelIds`). Exactly one per native
    *  provider (guarded by a registry unit test); explicitly independent of
    *  registry order, which stays the *default-seat* / picker order (e.g.
-   *  Anthropic: Opus 5 is the sane zero-config default, but the flag sits
+   *  Anthropic: Opus 5.5 is the sane zero-config default, but the flag sits
    *  on Fable 5.1 — clicking the preset is the explicit max-power request). */
   smartest?: boolean
   /** Superseded model kept for history instead of being deleted. The update
@@ -171,17 +174,36 @@ const NATIVE_MODELS = [
     // flagship this high-stakes-decisions app wants out of the box — a sane
     // cost/capability default. (The 2-seat floor still seeds the second seat
     // from a *different* provider.) Fable 5.1 is an opt-in max-power option;
-    // Sonnet 5 is the cheaper workhorse.
+    // Sonnet 5.5 is the cheaper workhorse.
     //
-    // Opus 5 supersedes Opus 4.8 at identical pricing, so there's no
-    // cost/capability tradeoff to weigh — it simply replaces it as the
-    // default. One behavioural difference the thinking dial depends on:
-    // thinking is ON by default here (4.8 ran without it unless asked), and
-    // `thinking:{type:'disabled'}` is only legal at effort `high` or below.
-    // Our `off` rung sends `disabled` with no `effort`, which lands on the
-    // server-side default of `high` — legal by construction, but see
-    // `providers/reasoning.ts` before adding an effort there.
+    // Opus 5.5 supersedes Opus 5 at a *lower* price ($4/$20 vs $5/$25), so
+    // there's no cost/capability tradeoff to weigh — it simply replaces it as
+    // the default. One breaking change the thinking dial depends on: thinking
+    // can no longer be turned off at all (`thinking:{type:'disabled'}` 400s),
+    // hence `thinkingAlwaysOn` — Opus 5 still accepted `disabled`. Two other
+    // 5.5 breaking changes are harmless here: forced `tool_choice` errors
+    // (every call leaves tool choice at `auto`), and text between tool calls
+    // now arrives in `thinking` blocks whose text is empty at the default
+    // `display` — we always send `display:'summarized'`.
+    modelId: 'anthropic:claude-opus-5-5',
+    label: 'Claude Opus 5.5',
+    provider: 'anthropic',
+    thinkingAlwaysOn: true,
+    tier: 'paid',
+    country: 'USA',
+    developer: 'Anthropic',
+    contextWindow: 1_000_000,
+    capabilities: { tools: true, vision: true, reasoning: true },
+    defaultSystemPrompt: DEFAULT_PARTICIPANT_PROMPT,
+  },
+  {
+    // Superseded by Opus 5.5 above — strictly pricier ($5/$25) for less
+    // capability. Still served (Anthropic lists it as legacy, retirement not
+    // before 2027-07-24); kept listed rather than deleted so councils
+    // persisted while it was the default keep their real label, logo, and
+    // capabilities instead of degrading to the `getModel` stub.
     modelId: 'anthropic:claude-opus-5',
+    deprecated: true,
     label: 'Claude Opus 5',
     provider: 'anthropic',
     tier: 'paid',
@@ -192,10 +214,8 @@ const NATIVE_MODELS = [
     defaultSystemPrompt: DEFAULT_PARTICIPANT_PROMPT,
   },
   {
-    // Superseded by Opus 5 above. Kept listed rather than deleted so the
-    // recorded demo councils (and any council persisted while it was the
-    // default) keep their real label, logo, and capabilities instead of
-    // degrading to the `getModel` stub.
+    // Superseded by Opus 5 (itself superseded by Opus 5.5 above). Kept
+    // listed because the recorded demo councils seat it.
     modelId: 'anthropic:claude-opus-4-8',
     deprecated: true,
     label: 'Claude Opus 4.8',
@@ -208,15 +228,16 @@ const NATIVE_MODELS = [
     defaultSystemPrompt: DEFAULT_PARTICIPANT_PROMPT,
   },
   {
-    // Anthropic's most capable widely-released model (Sept 2026, Fable 5's
-    // successor at the same price) — offered opt-in and kept *below* Opus so
-    // it's not the zero-config default: it's premium-priced (2x Opus), runs
-    // always-on thinking, and its safety classifiers can refuse
-    // benign-adjacent prompts (this app wires no fallback). It also requires
-    // 30-day data retention, so a zero-retention org gets a 400. New in 5.1:
-    // forced `tool_choice` (`any` / `tool`) is a 400 — harmless here, every
-    // call leaves tool choice at `auto`. Pick it when you explicitly want
-    // maximum capability.
+    // Anthropic's most capable widely-released model — offered opt-in and
+    // kept *below* Opus so it's not the zero-config default: it's
+    // premium-priced (2.5x Opus 5.5), runs always-on thinking, and its
+    // safety classifiers can refuse benign-adjacent prompts (this app wires
+    // no fallback). It also requires 30-day data retention, so a
+    // zero-retention org gets a 400. Anthropic's own guidance is to reach
+    // for it on demanding reasoning and long-horizon agentic work, or when
+    // Opus 5.5 at higher effort still falls short — i.e. pick it when you
+    // explicitly want maximum capability. Shares Opus 5.5's forced
+    // `tool_choice` 400 (harmless here, tool choice stays `auto`).
     modelId: 'anthropic:claude-fable-5-1',
     smartest: true,
     label: 'Claude Fable 5.1',
@@ -246,7 +267,25 @@ const NATIVE_MODELS = [
     defaultSystemPrompt: DEFAULT_PARTICIPANT_PROMPT,
   },
   {
+    // The cheaper workhorse, and `DEFAULT_MODEL_ID` below. Sonnet 5.5
+    // replaces Sonnet 5 at the same $2/$10. Adaptive thinking but *not*
+    // always-on (unlike Opus 5.5 / Fable 5.1), so `off` genuinely disables
+    // thinking here — no `thinkingAlwaysOn`.
+    modelId: 'anthropic:claude-sonnet-5-5',
+    label: 'Claude Sonnet 5.5',
+    provider: 'anthropic',
+    tier: 'paid',
+    country: 'USA',
+    developer: 'Anthropic',
+    contextWindow: 1_000_000,
+    capabilities: { tools: true, vision: true, reasoning: true },
+    defaultSystemPrompt: DEFAULT_PARTICIPANT_PROMPT,
+  },
+  {
+    // Superseded by Sonnet 5.5 above (same price). Still served — legacy,
+    // retirement not before 2027-06-30.
     modelId: 'anthropic:claude-sonnet-5',
+    deprecated: true,
     label: 'Claude Sonnet 5',
     provider: 'anthropic',
     tier: 'paid',
@@ -257,7 +296,35 @@ const NATIVE_MODELS = [
     defaultSystemPrompt: DEFAULT_PARTICIPANT_PROMPT,
   },
   {
+    // The cheap Anthropic tier and the Anthropic rung of
+    // `TITLE_GENERATOR_CHAIN` (`storage/behavior.ts`) — keep that chain
+    // pointed here, not at the retiring Haiku 4.5 below. Haiku 5.5 is a
+    // generational jump, not a version bump: 1M context (4.5 had 200K) at a
+    // tenth of the price (from $0.10/$0.50 vs $1/$5), and it moved to the
+    // *adaptive* thinking API — so deliberately NO `thinkingApi: 'budget'`
+    // here. It also uses the 4.7-era tokenizer, so the same text counts
+    // ~30% more tokens than on 4.5 (immaterial to the chars/4 context
+    // meter, and the window grew 5x).
+    modelId: 'anthropic:claude-haiku-5-5',
+    label: 'Claude Haiku 5.5',
+    provider: 'anthropic',
+    tier: 'paid',
+    country: 'USA',
+    developer: 'Anthropic',
+    contextWindow: 1_000_000,
+    capabilities: { tools: true, vision: true, reasoning: true },
+    defaultSystemPrompt: DEFAULT_PARTICIPANT_PROMPT,
+  },
+  {
+    // Superseded by Haiku 5.5 above, and the nearest retirement on
+    // Anthropic's board: its window opens 2026-10-15 (every other listed
+    // model is 2027). Hidden from pickers but still resolvable — Anthropic
+    // gives 60 days' notice before an actual shutdown, and a persisted
+    // council seating it must keep its real label and capabilities. The last
+    // entry anywhere in the catalog on the legacy `{type:'enabled',
+    // budget_tokens}` thinking shape (`thinkingApi: 'budget'`).
     modelId: 'anthropic:claude-haiku-4-5',
+    deprecated: true,
     label: 'Claude Haiku 4.5',
     provider: 'anthropic',
     providerModelId: 'claude-haiku-4-5-20251001',
@@ -272,38 +339,46 @@ const NATIVE_MODELS = [
 
   /* ---------- OpenAI -------------- */
   {
-    // Sol leads the OpenAI group as the zero-config default seat: the top
-    // rung of the GPT-5.6 generation (~1M context) at well under half of
+    // Sol leads the OpenAI group as the zero-config default seat: the middle
+    // rung of the current GPT-6 generation (~1.05M context) at a fifth of
     // Astra's price — the same cost/capability call as Opus leading
-    // Anthropic while Fable carries `smartest`. GPT-5.6 ships as three named
-    // price tiers rather than one model: Sol, then Terra and Luna below,
-    // with the GPT-5.4 mini/nano pair still covering the budget end.
+    // Anthropic while Fable carries `smartest`. OpenAI ships the generation
+    // as three named tiers rather than one model: Astra, Sol, and Luna (no
+    // Terra this time); 6.1 Sol is the current Sol, at the same $2/$10 as
+    // the 6.0 Sol it replaced.
     //
-    // No `-pro` entries: the 5.6 pro tier does NOT support streaming (the
-    // same constraint that kept gpt-5.5-pro out) — every participant seat
-    // here streams, so Pro is unusable as a seat. Re-check if OpenAI ever
-    // ships streaming for the pro tier.
-    modelId: 'openai:gpt-5.6-sol',
-    label: 'GPT-5.6 Sol',
+    // `thinkingAlwaysOn`: 6.1 Sol accepts `low`…`max` but rejects BOTH
+    // `none` and `minimal`, so the user's `off` clamps up to `low` instead
+    // of 400ing — the same shape as Astra below. Its top rung is `max`,
+    // which the installed `@ai-sdk/openai` doesn't type yet, so `max` clamps
+    // down to `xhigh` until the provider package is bumped (see
+    // `providers/reasoning.ts`).
+    //
+    // No `-pro` entries: OpenAI's models page documents no Pro tier at all
+    // (the `gpt-6-astra-pro` id OpenRouter serves is Astra run with
+    // `reasoning.mode: pro`, and reads as a ChatGPT seat entitlement rather
+    // than a model card), and the 5.5/5.6 pro tiers did not support
+    // streaming — every participant seat here streams. Re-check if OpenAI
+    // ever documents a streaming pro model.
+    modelId: 'openai:gpt-6.1-sol',
+    label: 'GPT-6.1 Sol',
     provider: 'openai',
+    thinkingAlwaysOn: true,
     tier: 'paid',
     country: 'USA',
     developer: 'OpenAI',
-    contextWindow: 1_000_000,
+    contextWindow: 1_050_000,
     capabilities: { tools: true, vision: true, reasoning: true },
     defaultSystemPrompt: DEFAULT_PARTICIPANT_PROMPT,
   },
   {
-    // GPT-6 Astra (Sept 2026) — OpenAI's most capable model, hence the
-    // `smartest` flag, but kept *below* Sol so it's not the default seat:
-    // 2.5x Sol's price ($10/$50 vs $4/$20 per MTok, plus a pricier
-    // long-context tier beyond the standard window). Two API differences
-    // the thinking dial depends on: effort `none` returns a 400 (and
-    // `minimal` isn't offered), so `thinkingAlwaysOn` clamps the user's
-    // `off` up to `low`; and its top rung is `max`, which the installed
-    // `@ai-sdk/openai` doesn't type yet — `max` clamps down to `xhigh` until
-    // the provider package is bumped (see `providers/reasoning.ts`). No
-    // "Astra Pro" entry: OpenAI documents no such model id.
+    // GPT-6 Astra — OpenAI's most capable model, hence the `smartest` flag,
+    // but kept *below* Sol so it's not the default seat: 5x Sol's price
+    // ($10/$50 vs $2/$10 per MTok, plus a pricier long-context tier beyond
+    // the standard window). Same two thinking-dial quirks as Sol above:
+    // effort `none` returns a 400 (and `minimal` isn't offered), so
+    // `thinkingAlwaysOn` clamps the user's `off` up to `low`; and `max`
+    // clamps down to `xhigh` until `@ai-sdk/openai` types it.
     modelId: 'openai:gpt-6-astra',
     smartest: true,
     label: 'GPT-6 Astra',
@@ -317,7 +392,42 @@ const NATIVE_MODELS = [
     defaultSystemPrompt: DEFAULT_PARTICIPANT_PROMPT,
   },
   {
+    // The budget seat, and the OpenAI rung of `TITLE_GENERATOR_CHAIN`
+    // (`storage/behavior.ts`) — keep that chain pointed here, not at the
+    // superseded 5.4 nano below: Luna is cheaper ($0.10/$0.50 vs
+    // $0.20/$1.25) at 2.6x the context. It's also the only model in the
+    // generation that still accepts effort `none`, so it deliberately
+    // carries no `thinkingAlwaysOn` — "off" really is off on this seat.
+    modelId: 'openai:gpt-6-luna',
+    label: 'GPT-6 Luna',
+    provider: 'openai',
+    tier: 'paid',
+    country: 'USA',
+    developer: 'OpenAI',
+    contextWindow: 1_050_000,
+    capabilities: { tools: true, vision: true, reasoning: true },
+    defaultSystemPrompt: DEFAULT_PARTICIPANT_PROMPT,
+  },
+  {
+    // Superseded by GPT-6.1 Sol above (same $2/$10 price point). The whole
+    // GPT-5.6 tier came off OpenAI's models page with the GPT-6 generation;
+    // still served, so a persisted council seating it keeps working.
+    modelId: 'openai:gpt-5.6-sol',
+    deprecated: true,
+    label: 'GPT-5.6 Sol',
+    provider: 'openai',
+    tier: 'paid',
+    country: 'USA',
+    developer: 'OpenAI',
+    contextWindow: 1_000_000,
+    capabilities: { tools: true, vision: true, reasoning: true },
+    defaultSystemPrompt: DEFAULT_PARTICIPANT_PROMPT,
+  },
+  {
+    // Superseded by the GPT-6 tier — which has no Terra rung, so the
+    // nearest live equivalent is 6.1 Sol above.
     modelId: 'openai:gpt-5.6-terra',
+    deprecated: true,
     label: 'GPT-5.6 Terra',
     provider: 'openai',
     tier: 'paid',
@@ -328,7 +438,9 @@ const NATIVE_MODELS = [
     defaultSystemPrompt: DEFAULT_PARTICIPANT_PROMPT,
   },
   {
+    // Superseded by GPT-6 Luna above (same rung, a generation on).
     modelId: 'openai:gpt-5.6-luna',
+    deprecated: true,
     label: 'GPT-5.6 Luna',
     provider: 'openai',
     tier: 'paid',
@@ -339,8 +451,9 @@ const NATIVE_MODELS = [
     defaultSystemPrompt: DEFAULT_PARTICIPANT_PROMPT,
   },
   {
-    // Superseded by the GPT-5.6 tier above; kept listed (see the `deprecated`
-    // field doc) because the recorded demo councils seat it.
+    // Superseded by the GPT-5.6 tier, itself superseded by GPT-6 above;
+    // kept listed (see the `deprecated` field doc) because the recorded
+    // demo councils seat it.
     modelId: 'openai:gpt-5.5',
     deprecated: true,
     label: 'GPT-5.5',
@@ -353,9 +466,9 @@ const NATIVE_MODELS = [
     defaultSystemPrompt: DEFAULT_PARTICIPANT_PROMPT,
   },
   {
-    // Superseded by GPT-5.6 Terra (same mid price point). GPT-5.4 context
-    // windows are best-effort (GPT-5-class ~400K; OpenAI's docs don't publish
-    // an exact figure for the 5.4 tier) — refine if needed.
+    // Superseded by GPT-5.6 Terra, itself superseded by GPT-6. GPT-5.4
+    // context windows are best-effort (GPT-5-class ~400K; OpenAI's docs
+    // don't publish an exact figure for the 5.4 tier) — refine if needed.
     modelId: 'openai:gpt-5.4',
     deprecated: true,
     label: 'GPT-5.4',
@@ -368,7 +481,11 @@ const NATIVE_MODELS = [
     defaultSystemPrompt: DEFAULT_PARTICIPANT_PROMPT,
   },
   {
+    // Superseded by GPT-6 Luna above, which is both cheaper and much
+    // longer-context — the 5.4 mini/nano pair no longer covers a price
+    // point the current generation leaves open.
     modelId: 'openai:gpt-5.4-mini',
+    deprecated: true,
     label: 'GPT-5.4 mini',
     provider: 'openai',
     tier: 'paid',
@@ -379,7 +496,10 @@ const NATIVE_MODELS = [
     defaultSystemPrompt: DEFAULT_PARTICIPANT_PROMPT,
   },
   {
+    // See GPT-5.4 mini above — superseded by GPT-6 Luna, which also took
+    // over its `TITLE_GENERATOR_CHAIN` rung.
     modelId: 'openai:gpt-5.4-nano',
+    deprecated: true,
     label: 'GPT-5.4 nano',
     provider: 'openai',
     tier: 'paid',
@@ -444,15 +564,17 @@ const NATIVE_MODELS = [
     defaultSystemPrompt: DEFAULT_PARTICIPANT_PROMPT,
   },
   {
-    // `smartest`: the current benchmark split is real — 3.5 Flash wins most
-    // agentic/coding benchmarks, but 3.1 Pro wins *deep reasoning*
+    // `smartest`: the current benchmark split is real — the Flash line wins
+    // most agentic/coding benchmarks, but 3.1 Pro wins *deep reasoning*
     // (Humanity's Last Exam, ARC-AGI-2, long-context retrieval), which is
     // what council deliberation actually leans on. Caveat: still PREVIEW —
     // the callable id carries the `-preview` suffix (no stable
-    // `gemini-3.1-pro` yet), and preview ids rotate / get discontinued with
-    // little notice (Google did exactly that to
-    // gemini-3.1-flash-lite-preview). If this seat starts
-    // erroring, swap to the GA id — or move `smartest` to the GA Flash.
+    // `gemini-3.1-pro` yet, and no newer Pro at all), and preview ids rotate
+    // / get discontinued with little notice: Google has since shut down both
+    // gemini-3.1-flash-lite-preview AND gemini-3-pro-preview, so a Pro
+    // preview going away is precedent, not a hypothetical. If this seat
+    // starts erroring, swap to the GA id — or move `smartest` to the GA
+    // Flash.
     modelId: 'google:gemini-3.1-pro-preview',
     label: 'Gemini 3.1 Pro',
     provider: 'google',
@@ -661,4 +783,4 @@ export function getModel(modelId: string): ModelEntry {
  * and omitted from pickers by default, so an Ollama id here could seed a
  * seat the picker can't even display.
  */
-export const DEFAULT_MODEL_ID: NativeModelId = 'anthropic:claude-sonnet-5'
+export const DEFAULT_MODEL_ID: NativeModelId = 'anthropic:claude-sonnet-5-5'

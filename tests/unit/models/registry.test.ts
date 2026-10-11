@@ -98,7 +98,7 @@ describe('registry', () => {
 })
 
 /**
- * Catalog-currency pins for the July and September 2026 refreshes.
+ * Catalog-currency pins for the July, September and October 2026 refreshes.
  *
  * These name model ids literally, against this suite's usual habit of
  * deriving expectations from the registry — that's the point. A catalog
@@ -121,6 +121,19 @@ describe('catalog currency', () => {
     ['google:gemini-3.8-flash', 'google:gemini-3.6-flash'],
     ['groq:openai/gpt-oss-20b', 'groq:llama-3.1-8b-instant'],
     ['groq:qwen/qwen3.8-27b', 'groq:llama-3.3-70b'],
+    // October 2026 — the Claude 5.5 generation and the GPT-6 tier.
+    ['anthropic:claude-opus-5-5', 'anthropic:claude-opus-5'],
+    ['anthropic:claude-sonnet-5-5', 'anthropic:claude-sonnet-5'],
+    ['anthropic:claude-haiku-5-5', 'anthropic:claude-haiku-4-5'],
+    ['openai:gpt-6.1-sol', 'openai:gpt-5.6-sol'],
+    ['openai:gpt-6-luna', 'openai:gpt-5.6-luna'],
+    ['openai:gpt-6-luna', 'openai:gpt-5.4-mini'],
+    ['openai:gpt-6-luna', 'openai:gpt-5.4-nano'],
+    // GPT-6 has no Terra rung; 6.1 Sol is the nearest live equivalent.
+    ['openai:gpt-6.1-sol', 'openai:gpt-5.6-terra'],
+    ['openrouter:x-ai/grok-4.7', 'openrouter:x-ai/grok-4.6'],
+    ['openrouter:mistralai/mistral-large-4-0', 'openrouter:mistralai/mistral-large-2512'],
+    ['openrouter:cohere/command-a-plus', 'openrouter:cohere/command-a'],
   ]
   /** Additions with no predecessor to flag (a new tier, not a swap). */
   const ADDITIONS = ['openai:gpt-6-astra', 'ollama:gemma4']
@@ -172,7 +185,9 @@ describe('catalog currency', () => {
     // it is invisible until a user's `off` rung 400s at the first real call.
     for (const id of [
       'anthropic:claude-fable-5-1',
+      'anthropic:claude-opus-5-5',
       'openai:gpt-6-astra',
+      'openai:gpt-6.1-sol',
       'google:gemini-3.8-flash',
     ]) {
       expect(

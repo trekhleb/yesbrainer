@@ -10,9 +10,9 @@ import type { ReasoningEffort } from '@/types/council'
  *
  *  - **Nearest legal value, never exceeding what the user picked.** `max`
  *    clamps *down* to a model's top rung (OpenAI `xhigh`, Groq `high`);
- *    `off` clamps *up* only on `thinkingAlwaysOn` models (Fable 5.x, GPT-6
- *    Astra, Pro-tier and 3.7+ Flash Gemini), where no cheaper state legally
- *    exists.
+ *    `off` clamps *up* only on `thinkingAlwaysOn` models (Fable 5.x and
+ *    Opus 5.5, GPT-6 Astra and 6.1 Sol, Pro-tier and 3.7+ Flash Gemini),
+ *    where no cheaper state legally exists.
  *  - **`off` is a rung, not a separate toggle.** Most providers encode
  *    on/off inside the same scale (OpenAI `'none'`, Gemini budget `0`), so a
  *    standalone boolean would be a fake affordance on most seats.
@@ -91,7 +91,8 @@ export function buildReasoningProviderOptions(
       // blocks with *empty* text. Display is visibility-only: thinking is
       // billed identically either way.
       if (effort === 'off') {
-        // Fable 5 400s on `disabled` — clamp to its cheapest legal state.
+        // Fable 5.x and Opus 5.5 400 on `disabled` — clamp to the cheapest
+        // legal state. (Sonnet 5.5 / Haiku 5.5 still accept it.)
         return entry.thinkingAlwaysOn
           ? {
               anthropic: {
@@ -116,8 +117,9 @@ export function buildReasoningProviderOptions(
       // (raw reasoning is encrypted) — skipped for 'none', where there is
       // nothing to summarize.
       if (effort === 'off') {
-        // GPT-6 Astra 400s on `'none'` (and offers no `'minimal'`) — clamp
-        // to its cheapest legal rung, the same shape as Fable's clamp above.
+        // GPT-6 Astra and 6.1 Sol 400 on `'none'` (and offer no
+        // `'minimal'`) — clamp to the cheapest legal rung, the same shape as
+        // Fable's clamp above. GPT-6 Luna still accepts `'none'`.
         return entry.thinkingAlwaysOn
           ? { openai: { reasoningEffort: 'low', reasoningSummary: 'auto' } }
           : { openai: { reasoningEffort: 'none' } }
@@ -177,15 +179,17 @@ export function buildReasoningProviderOptions(
  * anyway visible to the live strip. That's why Anthropic's adaptive family
  * is mostly absent: sending `thinking:{type:'adaptive'}` just to carry
  * `display` would *turn thinking on* for a default-off model (Opus 4.8).
- * The one exception is `thinkingAlwaysOn` (Fable 5.x), where explicit
- * adaptive is byte-for-byte the state it already runs in. Known gap,
- * accepted: Opus 5 and Sonnet 5 under Default think adaptively but
- * invisibly — we have no registry signal separating "defaults to adaptive"
- * from "defaults to off", and guessing risks billing surprises. That gap
- * now sits on the *default seat* (Opus 5 leads the Anthropic group), so
- * it's the obvious next thing to fix: a `thinksByDefault` registry flag
- * would let Default carry `display` for exactly the models that were going
- * to think anyway.
+ * The exception is `thinkingAlwaysOn` (Fable 5.x, and Opus 5.5 since the
+ * Oct 2026 refresh), where explicit adaptive is byte-for-byte the state the
+ * model already runs in — which is why the *default seat* no longer falls in
+ * the gap below.
+ *
+ * Known gap, accepted, now only on non-leading seats: Sonnet 5.5 and Haiku
+ * 5.5 under Default think adaptively but invisibly — we have no registry
+ * signal separating "defaults to adaptive" from "defaults to off", and
+ * guessing risks billing surprises. A `thinksByDefault` registry flag would
+ * let Default carry `display` for exactly the models that were going to
+ * think anyway.
  */
 function displayOnlyReasoningOptions(
   entry: ModelEntry,

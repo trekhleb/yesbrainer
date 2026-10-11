@@ -50,16 +50,28 @@ const VENDOR_META = {
 // Curated allow-list — which OpenRouter models surface in the picker. Keep it
 // vendor-diverse; native-routed providers (Anthropic/OpenAI/Google/Groq) stay
 // in registry.ts, so prefer vendors we DON'T cover natively here.
-// One current flagship per vendor (Sept 2026): grok-4.6, deepseek-v4-pro-0813
-// (the bare `deepseek-v4-pro` id pins the older 0423 snapshot), qwen3.8-max,
-// kimi-k3, mistral-large-2512 (still Mistral's largest), command-a.
+// One current flagship per vendor (Oct 2026): grok-4.7, deepseek-v4-pro-0813
+// (the bare `deepseek-v4-pro` id pins the older 0423 snapshot; v4.1 exists
+// only in the flash tier so far), qwen3.8-max-0902, kimi-k3,
+// mistral-large-4-0, command-a-plus.
+//
+// Two judgement calls worth keeping written down, because "newest id wins"
+// gets both wrong:
+//   - NOT `qwen/qwen3.8-max-prime`, despite being newer and pricier: it's
+//     the same flagship on a faster *serving lane* (~2x the price, no new
+//     capabilities, a disputed speed claim), and Alibaba's Model Studio
+//     still documents only `qwen3.8-max`.
+//   - NOT `x-ai/grok-4.20`, whose version number looks the highest in the
+//     catalog but dates from March 2026. Grok 4.7 (2026-09-21) is current.
+// `mistral-large-4-0` is a hosted *public preview* (open weights promised
+// later) — same accepted-preview posture as Gemini 3.1 Pro in registry.ts.
 const ALLOWED_OPENROUTER_MODEL_IDS = [
   'deepseek/deepseek-v4-pro-0813',
   'qwen/qwen3.8-max-0902',
   'moonshotai/kimi-k3',
-  'mistralai/mistral-large-2512',
-  'x-ai/grok-4.6',
-  'cohere/command-a',
+  'mistralai/mistral-large-4-0',
+  'x-ai/grok-4.7',
+  'cohere/command-a-plus',
 ]
 
 // Superseded ids stay emitted, flagged `deprecated: true` — the same
@@ -73,6 +85,9 @@ const DEPRECATED_OPENROUTER_MODEL_IDS = [
   'qwen/qwen3.7-max', // → qwen3.8-max-0902
   'moonshotai/kimi-k2.6', // → kimi-k3
   'x-ai/grok-4.5', // → grok-4.6
+  'x-ai/grok-4.6', // → grok-4.7
+  'mistralai/mistral-large-2512', // → mistral-large-4-0 (Large 3 → Large 4)
+  'cohere/command-a', // → command-a-plus (which folds in Reasoning/Vision/Translate)
 ]
 const CURATED_OPENROUTER_MODEL_IDS = new Set([
   ...ALLOWED_OPENROUTER_MODEL_IDS,
